@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#030712] text-slate-200 antialiased min-h-screen overflow-x-hidden selection:bg-purple-500/30;
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.15), transparent 40%),
+      radial-gradient(circle at 85% 30%, rgba(15, 118, 110, 0.15), transparent 40%);
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-2xl;
+  }
+  
+  .glass-card {
+    @apply bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-300 backdrop-blur-lg border border-white/[0.05] hover:border-white/[0.1] rounded-2xl shadow-xl hover:shadow-2xl;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-gradient-to-r from-purple-600/80 to-blue-600/80 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl shadow-lg shadow-purple-500/20 backdrop-blur-md transition-all active:scale-95 font-medium border border-white/10;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-xl backdrop-blur-md transition-all active:scale-95 font-medium border border-white/10;
+  }
+  
+  .input-glass {
+    @apply w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl px-4 py-3 outline-none text-white placeholder-white/30 backdrop-blur-sm transition-all focus:ring-2 focus:ring-purple-500/20;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/20;
+}
