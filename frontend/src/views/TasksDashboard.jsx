@@ -8,7 +8,7 @@ export default function TasksDashboard() {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
   
-  const token = import.meta.env.VITE_ASSISTANT_TOKEN || '';
+  const token = localStorage.getItem('openhandi_token') || '';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const fetchTasks = async () => {
