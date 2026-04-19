@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # Endpoint Básico
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
     return {"status": "ok", "message": "OpenHandi API Python corriendo exitosamente"}
 
