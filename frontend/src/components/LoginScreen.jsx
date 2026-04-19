@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Loader2, Bot } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 
 export default function LoginScreen({ onLogin }) {
   const [token, setToken] = useState('');
@@ -51,15 +51,11 @@ export default function LoginScreen({ onLogin }) {
       >
         {/* Logo */}
         <div className="flex flex-col items-center gap-4 mb-8">
-          <div
-            className="flex items-center justify-center w-14 h-14 rounded-2xl"
-            style={{
-              background: 'var(--accent)',
-              boxShadow: '0 4px 20px rgba(224,65,58,0.35)',
-            }}
-          >
-            <Bot className="w-7 h-7 text-white" />
-          </div>
+          <img
+            src="/login-logo.png"
+            alt="OpenHandi logo"
+            className="w-20 h-20 object-contain drop-shadow-xl"
+          />
           <div className="text-center">
             <h1
               className="text-xl font-semibold"
