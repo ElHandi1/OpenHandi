@@ -67,7 +67,7 @@ router.post('/', async (req, res, next) => {
 
     // 3. Prepare payload
     const messagesPayload = [
-      { role: 'system', content: 'You are OpenHandi, a highly capable persistent personal assistant. You manage tasks and help the user efficiently.' },
+      { role: 'system', content: 'You are OpenHandi, a highly capable persistent personal assistant. You manage tasks and help the user efficiently. Always respond entirely in Spanish. Never use Chinese characters.' },
       ...history.map(m => ({ role: m.role, content: m.content }))
     ];
 
