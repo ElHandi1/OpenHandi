@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageSquare, LayoutDashboard, Database, Activity, LogOut } from 'lucide-react';
+import { MessageSquare, Activity, LogOut, Bot } from 'lucide-react';
 import ChatView from './views/ChatView';
 import TasksDashboard from './views/TasksDashboard';
 import LoginScreen from './components/LoginScreen';
@@ -15,14 +15,12 @@ function App() {
       const stored = localStorage.getItem('openhandi_token');
       if (stored) {
         try {
-          const res = await fetch(`${apiUrl}/api/chat/verify`, { 
-            headers: { 'x-assistant-token': stored } 
+          const res = await fetch(`${apiUrl}/api/chat/verify`, {
+            headers: { 'x-assistant-token': stored }
           });
           if (res.ok) setAuthToken(stored);
           else localStorage.removeItem('openhandi_token');
-        } catch(e) {
-          // Ignore network errors on init
-        }
+        } catch (e) {}
       }
       setLoading(false);
     };
@@ -30,9 +28,13 @@ function App() {
   }, [apiUrl]);
 
   if (loading) return (
-    <div className="h-screen w-full bg-[#030712] flex flex-col items-center justify-center">
-       <div className="w-12 h-12 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin mb-4"></div>
-       <p className="text-white/50 animate-pulse">Initializing OpenHandi Matrix...</p>
+    <div style={{ background: 'var(--bg-base)' }} className="h-screen w-full flex items-center justify-center">
+      <div className="flex items-center gap-3">
+        <div className="w-5 h-5 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}
+        />
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Iniciando...</span>
+      </div>
     </div>
   );
 
@@ -45,72 +47,90 @@ function App() {
     setAuthToken(null);
   };
 
+  const navItem = ({ isActive }) => [
+    'relative flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium w-full transition-all duration-100',
+    isActive
+      ? 'text-[var(--text-primary)] bg-[var(--bg-elevated)]'
+      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/[0.04]'
+  ].join(' ');
+
   return (
     <BrowserRouter>
-      <div className="flex h-screen bg-[#030712] overflow-hidden">
-        {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-900/20 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-cyan-900/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-base)' }}>
 
-        {/* Sidebar */}
-        <aside className="w-64 glass-panel border-r border-white/5 flex flex-col z-10 m-4 rounded-3xl overflow-hidden shrink-0">
-          <div className="p-6 pb-2">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-cyan-400">
+        {/* ── Side Rail ── */}
+        <aside
+          className="flex flex-col shrink-0 h-full"
+          style={{
+            width: '220px',
+            borderRight: '1px solid var(--border)',
+            background: 'var(--bg-base)',
+          }}
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 px-4 h-14 shrink-0"
+            style={{ borderBottom: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-center w-7 h-7 rounded-md"
+              style={{ background: 'var(--accent)' }}>
+              <Bot className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-semibold text-sm tracking-tight" style={{ color: 'var(--text-primary)' }}>
               OpenHandi
-            </h1>
-            <p className="text-xs text-white/40 font-medium uppercase tracking-wider mt-1">Matrix Online</p>
+            </span>
           </div>
 
-          <nav className="flex-1 p-4 space-y-2">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
-                  isActive 
-                  ? 'bg-gradient-to-r from-purple-500/20 to-transparent text-purple-300 border border-purple-500/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' 
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <MessageSquare className="w-5 h-5" />
-              <span className="font-medium">Chat</span>
+          {/* Nav */}
+          <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
+            <NavLink to="/" end className={navItem}>
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>Chat</span>
             </NavLink>
-
-            <NavLink
-              to="/tasks"
-              className={({ isActive }) =>
-                `flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-300 ${
-                  isActive 
-                  ? 'bg-gradient-to-r from-purple-500/20 to-transparent text-purple-300 border border-purple-500/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]' 
-                  : 'text-white/50 hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <Activity className="w-5 h-5" />
-              <span className="font-medium">Cron Tasks</span>
+            <NavLink to="/tasks" className={navItem}>
+              <Activity className="w-4 h-4 shrink-0" />
+              <span>Tareas</span>
             </NavLink>
           </nav>
-          
-          <div className="p-4 mt-auto">
-             <button onClick={handleLogout} className="flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-300 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 w-full text-left font-medium">
-               <LogOut className="w-5 h-5" />
-               <span>Lock Matrix</span>
-             </button>
-             <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4"></div>
-            <div className="flex items-center space-x-3 px-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-              <span className="text-xs text-white/40 uppercase tracking-widest font-semibold">System Online</span>
+
+          {/* Footer */}
+          <div className="p-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full font-medium transition-all duration-100"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = 'var(--text-primary)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'var(--text-muted)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span>Cerrar sesion</span>
+            </button>
+
+            {/* Status pill */}
+            <div className="flex items-center gap-2 px-3 py-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                  style={{ background: 'var(--accent)' }} />
+                <span className="relative inline-flex rounded-full h-2 w-2"
+                  style={{ background: 'var(--accent)' }} />
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Sistema activo</span>
             </div>
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 relative z-10 m-4 ml-0 overflow-hidden rounded-3xl glass-panel">
+        {/* ── Main Content ── */}
+        <main className="flex-1 flex flex-col h-full overflow-hidden">
           <Routes>
             <Route path="/" element={<ChatView />} />
             <Route path="/tasks" element={<TasksDashboard />} />
           </Routes>
         </main>
+
       </div>
     </BrowserRouter>
   );

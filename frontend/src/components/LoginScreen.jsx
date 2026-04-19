@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock, Loader2, Bot } from 'lucide-react';
 
 export default function LoginScreen({ onLogin }) {
   const [token, setToken] = useState('');
@@ -14,10 +14,7 @@ export default function LoginScreen({ onLogin }) {
     setError(false);
     try {
       const res = await fetch(`${apiUrl}/api/chat/verify`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-assistant-token': token 
-        }
+        headers: { 'Content-Type': 'application/json', 'x-assistant-token': token }
       });
       if (res.ok) {
         localStorage.setItem('openhandi_token', token);
@@ -35,33 +32,97 @@ export default function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#030712] flex items-center justify-center p-4 z-50">
-      {/* Background aesthetics */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-slate-900 to-cyan-900/10"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px]"></div>
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ background: 'var(--bg-base)' }}
+    >
+      {/* Subtle vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)'
+        }}
+      />
 
-      <div className="glass-panel w-full max-w-md p-8 rounded-3xl relative z-10 animate-fade-in flex flex-col items-center">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-[0_0_40px_rgba(168,85,247,0.3)] mb-6">
-          <Lock className="w-10 h-10 text-white" />
+      <div
+        className="relative w-full max-w-sm mx-auto p-8 rounded-2xl animate-fade-in"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        {/* Logo */}
+        <div className="flex flex-col items-center gap-4 mb-8">
+          <div
+            className="flex items-center justify-center w-12 h-12 rounded-xl"
+            style={{ background: 'var(--accent)', border: '1px solid rgba(220,38,38,0.3)' }}
+          >
+            <Bot className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              OpenHandi
+            </h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              Acceso restringido
+            </p>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2">Restricted Access</h1>
-        <p className="text-white/50 text-center mb-8">Enter your personal assistant token to access the intelligence matrix.</p>
-        
-        <form onSubmit={handleSubmit} className="w-full relative group">
-           <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-cyan-600 rounded-2xl blur opacity-20 group-focus-within:opacity-50 transition duration-500"></div>
-           <div className="relative flex items-center glass-panel rounded-2xl p-2 pl-4">
-             <input
-               type="password"
-               value={token}
-               onChange={(e) => {setToken(e.target.value); setError(false);}}
-               placeholder="Secret Token"
-               className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/30 px-2 py-2 w-full text-lg font-medium tracking-wider"
-             />
-             <button type="submit" disabled={loading} className="btn-primary flex items-center justify-center w-12 h-12 !rounded-xl ml-2 shrink-0">
-               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Go'}
-             </button>
-           </div>
-           {error && <p className="text-red-400 text-sm mt-4 text-center animate-fade-in font-medium">Invalid token. Access denied.</p>}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="token"
+              className="text-xs font-medium"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              Token de acceso
+            </label>
+            <div className="relative">
+              <div
+                className="absolute left-3 top-1/2 -translate-y-1/2"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                id="token"
+                type="password"
+                value={token}
+                onChange={(e) => { setToken(e.target.value); setError(false); }}
+                placeholder="Ingresa tu token"
+                className="input pl-9 w-full"
+                autoFocus
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <p
+              className="text-xs animate-fade-in px-3 py-2 rounded-lg"
+              style={{
+                color: '#fca5a5',
+                background: 'rgba(252,165,165,0.06)',
+                border: '1px solid rgba(252,165,165,0.15)',
+              }}
+            >
+              Token invalido. Acceso denegado.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !token}
+            className="btn-primary w-full justify-center mt-1 h-10"
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Continuar'
+            )}
+          </button>
         </form>
       </div>
     </div>
