@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, Loader2, Plus, MessageSquare, Trash2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function ChatView() {
   const [sessions, setSessions] = useState([]);
+  const { id: routeId } = useParams();
+  const navigate = useNavigate();
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -19,8 +22,19 @@ export default function ChatView() {
   useEffect(() => { fetchSessions(); }, []);
 
   useEffect(() => {
-    if (activeSessionId) fetchHistory(activeSessionId);
-    else setMessages([]);
+    if (routeId) {
+      setActiveSessionId(routeId);
+    } else {
+      setActiveSessionId(null);
+    }
+  }, [routeId]);
+
+  useEffect(() => {
+    if (activeSessionId) {
+      fetchHistory(activeSessionId);
+    } else {
+      setMessages([]);
+    }
   }, [activeSessionId]);
 
   useEffect(() => {
@@ -35,7 +49,6 @@ export default function ChatView() {
       if (res.ok) {
         const data = await res.json();
         setSessions(data);
-        if (data.length > 0 && !activeSessionId) setActiveSessionId(data[0].id);
       }
     } catch (e) {}
   };
@@ -50,8 +63,7 @@ export default function ChatView() {
   };
 
   const createNewChat = () => {
-    setActiveSessionId(null);
-    setMessages([]);
+    navigate('/');
     textareaRef.current?.focus();
   };
 
@@ -63,7 +75,9 @@ export default function ChatView() {
         method: 'DELETE',
         headers: { 'x-assistant-token': token }
       });
-      if (activeSessionId === id) setActiveSessionId(null);
+      if (activeSessionId === id) {
+        navigate('/');
+      }
       fetchSessions();
     } catch (e) {}
   };
@@ -88,8 +102,8 @@ export default function ChatView() {
       if (res.ok) {
         const data = await res.json();
         if (!activeSessionId && data.session_id) {
-          setActiveSessionId(data.session_id);
           fetchSessions();
+          navigate(`/c/${data.session_id}`, { replace: true });
         }
         setMessages(prev => [...prev, { id: tempId + 1, role: 'assistant', content: data.response }]);
       } else {
@@ -165,7 +179,7 @@ export default function ChatView() {
             return (
               <button
                 key={s.id}
-                onClick={() => setActiveSessionId(s.id)}
+                onClick={() => navigate(`/c/${s.id}`)}
                 className={`group flex items-center justify-between w-full px-3 py-2 rounded-lg text-left transition-all duration-100 ${isActive ? 'gb-card' : ''}`}
                 style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)' }}
                 onMouseEnter={e => {

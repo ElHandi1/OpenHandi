@@ -146,6 +146,7 @@ function App() {
         <main className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
           <Routes>
             <Route path="/" element={<ChatView />} />
+            <Route path="/c/:id" element={<ChatView />} />
             <Route path="/tasks" element={<TasksDashboard />} />
           </Routes>
         </main>
