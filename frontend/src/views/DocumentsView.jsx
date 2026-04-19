@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Plus, Save, Trash2, Edit3, AlignLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, Plus, Save, Trash2, Edit3, AlignLeft, Upload } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -11,6 +11,7 @@ export default function DocumentsView() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const fileInputRef = useRef(null);
   const token = localStorage.getItem('openhandi_token') || '';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -104,6 +105,19 @@ export default function DocumentsView() {
         fetchDocs();
       }
     } catch (e) {}
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setContent(evt.target.result);
+      if (file.name.endsWith('.md')) setTitle(file.name.replace('.md', ''));
+      setIsEditing(true);
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
   };
 
   return (
@@ -204,6 +218,17 @@ export default function DocumentsView() {
                 <span className="text-[10px] uppercase font-mono mr-2" style={{ color: 'var(--text-muted)' }}>
                   ID: {activeDoc.split('-')[0]}
                 </span>
+                
+                <input type="file" accept=".md,.txt" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="btn-outline mr-2" 
+                  title="Subir archivo Markdown físico"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Subir Archivo
+                </button>
+
                 {isEditing ? (
                   <button onClick={saveDoc} disabled={isSaving} className="btn-primary">
                     <Save className="w-3.5 h-3.5" />
@@ -226,7 +251,7 @@ export default function DocumentsView() {
                   onChange={e => setContent(e.target.value)}
                   className="flex-1 p-8 bg-transparent outline-none resize-none"
                   style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace", fontSize: '0.875rem' }}
-                  placeholder="El agente modificará este contenido..."
+                  placeholder="Escribe tu texto, copia de otra parte o usa el botón 'Subir Archivo' para cargar un .md..."
                 />
               ) : (
                 <div className="flex-1 overflow-y-auto p-8 prose-minimal max-w-4xl mx-auto w-full animate-fade-in">
