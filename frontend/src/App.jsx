@@ -31,28 +31,18 @@ function App() {
     <div style={{ background: 'var(--bg-base)' }} className="h-screen w-full flex items-center justify-center">
       <div className="flex items-center gap-3">
         <div className="w-5 h-5 border-2 rounded-full animate-spin"
-          style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}
-        />
+          style={{ borderColor: 'var(--border-mid)', borderTopColor: 'var(--accent)' }} />
         <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Iniciando...</span>
       </div>
     </div>
   );
 
-  if (!authToken) {
-    return <LoginScreen onLogin={setAuthToken} />;
-  }
+  if (!authToken) return <LoginScreen onLogin={setAuthToken} />;
 
   const handleLogout = () => {
     localStorage.removeItem('openhandi_token');
     setAuthToken(null);
   };
-
-  const navItem = ({ isActive }) => [
-    'relative flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium w-full transition-all duration-100',
-    isActive
-      ? 'text-[var(--text-primary)] bg-[var(--bg-elevated)]'
-      : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/[0.04]'
-  ].join(' ');
 
   return (
     <BrowserRouter>
@@ -64,56 +54,88 @@ function App() {
           style={{
             width: '220px',
             borderRight: '1px solid var(--border)',
-            background: 'var(--bg-base)',
+            background: 'var(--bg-surface)',
           }}
         >
           {/* Logo */}
-          <div className="flex items-center gap-2.5 px-4 h-14 shrink-0"
-            style={{ borderBottom: '1px solid var(--border)' }}>
-            <div className="flex items-center justify-center w-7 h-7 rounded-md"
-              style={{ background: 'var(--accent)' }}>
+          <div
+            className="flex items-center gap-2.5 px-4 h-14 shrink-0"
+            style={{ borderBottom: '1px solid var(--border)' }}
+          >
+            <div
+              className="flex items-center justify-center w-7 h-7 rounded-lg"
+              style={{
+                background: 'var(--accent)',
+                boxShadow: '0 2px 8px rgba(224,65,58,0.35)',
+              }}
+            >
               <Bot className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold text-sm tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               OpenHandi
             </span>
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 p-2 flex flex-col gap-0.5 overflow-y-auto">
-            <NavLink to="/" end className={navItem}>
-              <MessageSquare className="w-4 h-4 shrink-0" />
-              <span>Chat</span>
-            </NavLink>
-            <NavLink to="/tasks" className={navItem}>
-              <Activity className="w-4 h-4 shrink-0" />
-              <span>Tareas</span>
-            </NavLink>
+          <nav className="flex-1 p-2 flex flex-col gap-0.5">
+            {[
+              { to: '/', end: true,  icon: <MessageSquare className="w-4 h-4 shrink-0" />, label: 'Chat' },
+              { to: '/tasks', icon: <Activity className="w-4 h-4 shrink-0" />, label: 'Tareas' },
+            ].map(({ to, end, icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  [
+                    'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium w-full transition-all duration-100',
+                    isActive ? 'gb-card' : '',
+                  ].join(' ')
+                }
+                style={({ isActive }) => ({
+                  color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                })}
+                onMouseEnter={e => {
+                  if (!e.currentTarget.classList.contains('gb-card')) {
+                    e.currentTarget.style.background = 'var(--bg-elevated)';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!e.currentTarget.classList.contains('gb-card')) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }
+                }}
+              >
+                {icon}
+                <span>{label}</span>
+              </NavLink>
+            ))}
           </nav>
 
           {/* Footer */}
           <div className="p-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm w-full font-medium transition-all duration-100"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm w-full font-medium transition-all duration-100"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => {
+                e.currentTarget.style.background = 'var(--bg-elevated)';
                 e.currentTarget.style.color = 'var(--text-primary)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.color = 'var(--text-muted)';
                 e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text-muted)';
               }}
             >
               <LogOut className="w-4 h-4 shrink-0" />
               <span>Cerrar sesion</span>
             </button>
 
-            {/* Status pill */}
-            <div className="flex items-center gap-2 px-3 py-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+            <div className="flex items-center gap-2 px-3 py-2 mt-1">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
                   style={{ background: 'var(--accent)' }} />
                 <span className="relative inline-flex rounded-full h-2 w-2"
                   style={{ background: 'var(--accent)' }} />
@@ -123,8 +145,8 @@ function App() {
           </div>
         </aside>
 
-        {/* ── Main Content ── */}
-        <main className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* ── Main ── */}
+        <main className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
           <Routes>
             <Route path="/" element={<ChatView />} />
             <Route path="/tasks" element={<TasksDashboard />} />

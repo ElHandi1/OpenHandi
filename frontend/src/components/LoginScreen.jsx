@@ -36,34 +36,38 @@ export default function LoginScreen({ onLogin }) {
       className="fixed inset-0 flex items-center justify-center"
       style={{ background: 'var(--bg-base)' }}
     >
-      {/* Subtle vignette */}
+      {/* Soft radial vignette — muy sutil, no un halo de color */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%)'
+          background:
+            'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(28,28,30,0.6) 0%, transparent 100%)',
         }}
       />
 
+      {/* Card */}
       <div
-        className="relative w-full max-w-sm mx-auto p-8 rounded-2xl animate-fade-in"
-        style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border)',
-        }}
+        className="relative w-full max-w-sm mx-4 p-8 rounded-2xl animate-fade-in gb-elevated"
       >
         {/* Logo */}
         <div className="flex flex-col items-center gap-4 mb-8">
           <div
-            className="flex items-center justify-center w-12 h-12 rounded-xl"
-            style={{ background: 'var(--accent)', border: '1px solid rgba(220,38,38,0.3)' }}
+            className="flex items-center justify-center w-14 h-14 rounded-2xl"
+            style={{
+              background: 'var(--accent)',
+              boxShadow: '0 4px 20px rgba(224,65,58,0.35)',
+            }}
           >
-            <Bot className="w-6 h-6 text-white" />
+            <Bot className="w-7 h-7 text-white" />
           </div>
           <div className="text-center">
-            <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            <h1
+              className="text-xl font-semibold"
+              style={{ color: 'var(--text-primary)', letterSpacing: '-0.025em' }}
+            >
               OpenHandi
             </h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
               Acceso restringido
             </p>
           </div>
@@ -73,55 +77,55 @@ export default function LoginScreen({ onLogin }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label
-              htmlFor="token"
+              htmlFor="token-input"
               className="text-xs font-medium"
               style={{ color: 'var(--text-secondary)' }}
             >
               Token de acceso
             </label>
-            <div className="relative">
-              <div
-                className="absolute left-3 top-1/2 -translate-y-1/2"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                <Lock className="w-4 h-4" />
-              </div>
+
+            {/* Input with gradient border on focus via gb-input wrapper */}
+            <div className="gb-input flex items-center gap-2 px-3 py-2.5 rounded-xl">
+              <Lock className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
               <input
-                id="token"
+                id="token-input"
                 type="password"
                 value={token}
                 onChange={(e) => { setToken(e.target.value); setError(false); }}
                 placeholder="Ingresa tu token"
-                className="input pl-9 w-full"
                 autoFocus
                 autoComplete="current-password"
+                className="flex-1 bg-transparent outline-none text-sm"
+                style={{
+                  color: 'var(--text-primary)',
+                  caretColor: 'var(--accent)',
+                }}
               />
             </div>
           </div>
 
           {error && (
-            <p
-              className="text-xs animate-fade-in px-3 py-2 rounded-lg"
+            <div
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs animate-fade-in"
               style={{
-                color: '#fca5a5',
-                background: 'rgba(252,165,165,0.06)',
-                border: '1px solid rgba(252,165,165,0.15)',
+                color: '#ff8080',
+                background: 'rgba(255, 128, 128, 0.07)',
+                border: '1px solid rgba(255, 128, 128, 0.18)',
               }}
             >
               Token invalido. Acceso denegado.
-            </p>
+            </div>
           )}
 
           <button
             type="submit"
             disabled={loading || !token}
-            className="btn-primary w-full justify-center mt-1 h-10"
+            className="btn-primary w-full justify-center h-10 mt-1 rounded-xl"
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              'Continuar'
-            )}
+            {loading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : 'Continuar'
+            }
           </button>
         </form>
       </div>

@@ -22,38 +22,42 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
   useEffect(() => { fetchLogs(); }, [taskId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       {/* Backdrop */}
       <div
         className="absolute inset-0 animate-fade-in"
-        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}
         onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Modal */}
       <div
-        className="relative w-full max-w-2xl max-h-[80vh] flex flex-col rounded-xl animate-slide-up overflow-hidden"
+        className="relative w-full max-w-2xl max-h-[78vh] flex flex-col rounded-2xl animate-slide-up overflow-hidden gb-elevated"
         style={{
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-strong)',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06)',
         }}
       >
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: '1px solid var(--border)' }}
+          style={{
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--bg-elevated)',
+          }}
         >
           <div className="flex items-center gap-2.5">
             <Server className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+            <span
+              className="text-sm font-semibold"
+              style={{ color: 'var(--text-primary)', letterSpacing: '-0.015em' }}
+            >
               Registros de Ejecucion
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={fetchLogs}
-              className="btn-ghost p-1.5"
+              className="btn-ghost rounded-lg"
               title="Actualizar"
               style={{ padding: '6px' }}
             >
@@ -61,7 +65,7 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
             </button>
             <button
               onClick={onClose}
-              className="btn-ghost p-1.5"
+              className="btn-ghost rounded-lg"
               style={{ padding: '6px' }}
             >
               <X className="w-4 h-4" />
@@ -70,44 +74,46 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+        <div
+          className="flex-1 overflow-y-auto p-4 flex flex-col gap-2"
+          style={{ background: 'var(--bg-surface)' }}
+        >
+          {/* Loading */}
           {loading && (
-            <div className="flex items-center justify-center py-12 gap-2" style={{ color: 'var(--text-muted)' }}>
+            <div className="flex items-center justify-center py-14 gap-2.5" style={{ color: 'var(--text-muted)' }}>
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span className="text-sm">Cargando registros...</span>
             </div>
           )}
 
+          {/* Empty */}
           {!loading && logs.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 gap-2" style={{ color: 'var(--text-muted)' }}>
-              <Server className="w-6 h-6" />
-              <p className="text-sm">Sin registros de ejecucion para esta tarea</p>
+            <div className="flex flex-col items-center justify-center py-14 gap-3" style={{ color: 'var(--text-muted)' }}>
+              <Server className="w-7 h-7" />
+              <p className="text-sm">Sin registros para esta tarea</p>
             </div>
           )}
 
+          {/* Log entries */}
           {!loading && logs.map((log) => (
             <div
               key={log.id}
-              className="rounded-lg overflow-hidden animate-fade-in"
-              style={{
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border)',
-              }}
+              className="rounded-xl overflow-hidden animate-fade-in gb-card"
             >
-              {/* Log header */}
+              {/* Log header row */}
               <div
                 className="flex items-center justify-between px-4 py-2.5"
                 style={{ borderBottom: '1px solid var(--border)' }}
               >
                 <div className="flex items-center gap-2">
                   {log.status === 'success' ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#86efac' }} />
+                    <CheckCircle2 className="w-3.5 h-3.5" style={{ color: '#7ee8a2' }} />
                   ) : (
-                    <AlertCircle className="w-3.5 h-3.5" style={{ color: '#fca5a5' }} />
+                    <AlertCircle className="w-3.5 h-3.5" style={{ color: '#ff8080' }} />
                   )}
                   <span
-                    className="text-xs font-medium tracking-wide uppercase"
-                    style={{ color: log.status === 'success' ? '#86efac' : '#fca5a5' }}
+                    className="text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: log.status === 'success' ? '#7ee8a2' : '#ff8080' }}
                   >
                     {log.status === 'success' ? 'Exitoso' : 'Error'}
                   </span>
@@ -119,27 +125,28 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
                 </span>
               </div>
 
-              {/* Log content */}
+              {/* Log body */}
               {(log.output || log.error) && (
-                <div className="p-4">
+                <div className="p-4 flex flex-col gap-2" style={{ background: 'var(--bg-surface)' }}>
                   {log.output && (
                     <pre
                       className="text-xs leading-relaxed whitespace-pre-wrap break-words"
-                      style={{ color: 'var(--text-secondary)', fontFamily: 'monospace' }}
+                      style={{
+                        color: 'var(--text-secondary)',
+                        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                      }}
                     >
                       {log.output}
                     </pre>
                   )}
                   {log.error && (
                     <pre
-                      className="text-xs leading-relaxed whitespace-pre-wrap break-words mt-2"
+                      className="text-xs leading-relaxed whitespace-pre-wrap break-words p-3 rounded-lg"
                       style={{
-                        color: '#fca5a5',
-                        fontFamily: 'monospace',
-                        background: 'rgba(252,165,165,0.05)',
-                        border: '1px solid rgba(252,165,165,0.1)',
-                        borderRadius: '6px',
-                        padding: '0.5rem',
+                        color: '#ff8080',
+                        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                        background: 'rgba(255,128,128,0.06)',
+                        border: '1px solid rgba(255,128,128,0.14)',
                       }}
                     >
                       {log.error}
