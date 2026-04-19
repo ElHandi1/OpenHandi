@@ -4,7 +4,8 @@ import { X, Loader2, Users, FileText, Settings, Bot } from 'lucide-react';
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [schedule, setSchedule] = useState('0 9 * * *');
+  const [schedule, setSchedule] = useState('0 */4 * * *');
+  const [scheduleLabel, setScheduleLabel] = useState('Cada 4 horas');
   const [taskType, setTaskType] = useState('simple');
   const [docId, setDocId] = useState('');
   
@@ -55,7 +56,8 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
 
       setName('');
       setDescription('');
-      setSchedule('0 9 * * *');
+      setSchedule('0 */4 * * *');
+      setScheduleLabel('Cada 4 horas');
       setTaskType('simple');
       setDocId('');
       onTaskCreated();
@@ -152,19 +154,40 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
              </div>
           )}
 
-          <div className="flex flex-col gap-1.5 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="flex flex-col gap-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
             <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-               <Settings className="w-3 h-3" /> Horario (Expresión Cron)
+               <Settings className="w-3 h-3" /> Frecuencia de ejecución
             </label>
-            <input 
-              type="text" 
-              value={schedule}
-              onChange={e => setSchedule(e.target.value)}
-              placeholder="0 9 * * *"
-              className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full font-mono"
-              style={{ color: 'var(--text-primary)', border: '1px solid var(--border)' }}
-              required
-            />
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Cada hora',    cron: '0 * * * *'    },
+                { label: 'Cada 2 horas', cron: '0 */2 * * *'  },
+                { label: 'Cada 4 horas', cron: '0 */4 * * *'  },
+                { label: 'Cada 8 horas', cron: '0 */8 * * *'  },
+                { label: 'Cada 12 h',   cron: '0 */12 * * *' },
+                { label: 'Cada día',     cron: '0 9 * * *'    },
+                { label: 'Lunes 9AM',    cron: '0 9 * * 1'    },
+                { label: 'Cada semana',  cron: '0 9 * * 0'    },
+                { label: 'Cada mes',     cron: '0 9 1 * *'    },
+              ].map(opt => (
+                <button
+                  key={opt.cron}
+                  type="button"
+                  onClick={() => { setSchedule(opt.cron); setScheduleLabel(opt.label); }}
+                  className="py-2 px-3 rounded-lg text-xs font-medium transition-all text-left"
+                  style={{
+                    background: schedule === opt.cron ? 'var(--accent)' : 'var(--bg-elevated)',
+                    color: schedule === opt.cron ? '#fff' : 'var(--text-secondary)',
+                    border: `1px solid ${schedule === opt.cron ? 'var(--accent)' : 'var(--border)'}`,
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
+              cron: <span style={{ color: 'var(--text-secondary)' }}>{schedule}</span>
+            </p>
           </div>
 
           <div className="flex justify-end pt-2">
