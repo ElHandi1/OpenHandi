@@ -63,7 +63,7 @@ function App() {
             style={{ borderBottom: '1px solid var(--border)' }}
           >
             <img
-              src="/logo.png"
+              src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
               alt="OpenHandi logo"
               className="w-7 h-7 rounded-lg object-contain"
               style={{ background: 'transparent' }}
