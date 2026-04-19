@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { supabase } from './supabase.js';
+import { runPaperclipTask } from './paperclip_engine.js';
 
 const activeJobs = new Map();
 
@@ -63,9 +64,9 @@ export async function executeTask(taskId) {
     const { data: task } = await supabase.from('cron_tasks').select('*').eq('id', taskId).single();
     if (!task) throw new Error('Task not found');
 
-    // Simulate task execution (Here we could trigger an LLM tool call if required)
-    // For this boilerplate, we log success
-    const result = { success: true, message: `Task ${task.name} executed successfully.` };
+    // Trigger the real LLM Paperclip action here
+    const llmReport = await runPaperclipTask(task);
+    const result = { success: true, message: `Generado orquestación.`, payload: llmReport };
 
     // Update log
     await supabase.from('cron_logs').insert({
