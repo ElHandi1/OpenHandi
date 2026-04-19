@@ -18,11 +18,13 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     from datetime import datetime
     current_date = datetime.now().strftime("%d de %B de %Y")
     
+    current_year = datetime.now().year
+    
     # Define Agents
     investigator = Agent(
         role="Investigador Web Senior Web3",
-        goal="Buscar en internet datos actualizados de HOY, técnicos y relevantes sobre la misión solicitada.",
-        backstory=f"Eres un hacker investigador en ecosistemas Web3. Hoy es **{current_date}**. Tu deber imperativo es buscar datos EXCLUSIVOS de la actualidad (año 2026), ignorando sucesos viejos a menos que se pidan. Extraes datos crudos reales, ejemplos y tendencias de hoy.",
+        goal=f"Buscar en internet datos actualizados de HOY, técnicos y relevantes sobre la misión solicitada en {current_year}.",
+        backstory=f"Eres un hacker investigador en ecosistemas Web3. Hoy es **{current_date}**. Tu deber imperativo es buscar datos EXCLUSIVOS de la actualidad (año {current_year}), ignorando sucesos viejos a menos que se pidan. Extraes datos crudos reales, ejemplos y tendencias de hoy. NUNCA uses chino, SIEMPRE comunícate en español.",
         verbose=True,
         allow_delegation=False,
         tools=[search_tool],
@@ -32,7 +34,7 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     writer = Agent(
         role="Redactor Maestro Técnico",
         goal="Reescribir el archivo Markdown del usuario utilizando los datos nuevos descubiertos por el investigador.",
-        backstory="Eres un Technical Writer experto en documentación de software. Sabes inyectar datos en archivos MD sin destruir su formato estructural.",
+        backstory="Eres un Technical Writer experto en documentación de software. Sabes inyectar datos en archivos MD sin destruir su formato estructural. NUNCA uses chino ni caracteres asiáticos. Habla y escribe SIEMPRE en español nativo perfectamente.",
         verbose=True,
         allow_delegation=False,
         llm=llm
@@ -41,7 +43,7 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     auditor = Agent(
         role="Juez Técnico Implacable",
         goal="Evaluar estrictamente si el nuevo documento redactado cumple con la misión original y aporta verdadero valor.",
-        backstory="Eres un CTO exigente. Si el documento tiene formato roto, es genérico o dice tonterías, debes RECHAZARLO. Si aporta datos de calidad, debes dar el veredicto: 'APROBADO'.",
+        backstory="Eres un CTO exigente. Si el documento tiene formato roto, usa palabras en CHINO, es genérico o dice tonterías, debes RECHAZARLO. Si aporta datos de calidad actuales y está 100% en español, debes dar el veredicto: 'APROBADO'. NUNCA uses chino en tu propia respuesta.",
         verbose=True,
         allow_delegation=False,
         llm=llm
@@ -49,19 +51,19 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     
     # Define Tasks
     task_research = Task(
-        description=f"Busca en internet la siguiente misión: '{description}'. Extrae datos duros e insights técnicos.",
-        expected_output="Un listado detallado de datos crudos sobre el tema investigado.",
+        description=f"Obligatorio: Busca en internet incidentes, noticias o datos ocurridos estrictamente en el año {current_year}. Ignora resultados de 2021, 2022, 2023 o 2024. Misión: '{description}'. Extrae datos duros e insights técnicos de la fecha actual.",
+        expected_output="Un listado detallado de datos crudos recientes sobre el tema investigado en español.",
         agent=investigator
     )
     
     task_write = Task(
-        description=f"Misión: Toma los datos del Investigador y este archivo Markdown actual:\n\n{current_doc['content_markdown']}\n\nReescríbelo inyectando estratégicamente la nueva info. IMPORTANTE: Devuelve SÓLO el código markdown válido resultante, sin bloques ``` extra.",
-        expected_output="El código Markdown (.md) completamente refactorizado y enriquecido.",
+        description=f"Misión: Toma los datos de {current_year} del Investigador y este archivo Markdown actual:\n\n{current_doc['content_markdown']}\n\nReescríbelo inyectando estratégicamente la nueva info. IMPORTANTE: El texto final DEBE estar 100% en español. NO puede haber ningún caracter chino. Devuelve SÓLO el código markdown válido resultante, sin bloques ``` extra.",
+        expected_output="El código Markdown (.md) completamente refactorizado y enriquecido 100% en español puro.",
         agent=writer
     )
     
     task_audit = Task(
-        description=f"Evalúa el markdown generado por el Redactor contra la misión original ('{description}'). Si el MD es excelente, tu reporte debe comenzar exactamente con la palabra 'APROBADO' y el porqué. Si es deficiente, escribe 'RECHAZADO' y los motivos.",
+        description=f"Evalúa el markdown generado por el Redactor contra la misión original ('{description}'). Verifica que TODO esté en impecable español, sin rastros de caracteres chinos y que la data sea de {current_year}. Si el MD es excelente, tu reporte debe comenzar exactamente con la palabra 'APROBADO'. Si es deficiente, escribe 'RECHAZADO' y los motivos.",
         expected_output="Un veredicto claro comenzando por APROBADO o RECHAZADO, seguido de los comentarios técnicos.",
         agent=auditor
     )
