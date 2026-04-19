@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, User, Loader2, Plus, MessageSquare, Trash2 } from 'lucide-react';
+import { Send, Bot, Loader2, Plus, MessageSquare, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -231,14 +231,6 @@ export default function ChatView() {
                   key={msg.id}
                   className={`flex gap-3 animate-slide-up ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  {msg.role === 'assistant' && (
-                    <div
-                      className="flex items-center justify-center w-8 h-8 rounded-xl shrink-0 mt-0.5 gb-card"
-                    >
-                      <Bot className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                    </div>
-                  )}
-
                   <div
                     style={msg.role === 'user' ? {
                       border: '1px solid transparent',
@@ -268,14 +260,6 @@ export default function ChatView() {
                       </div>
                     )}
                   </div>
-
-                  {msg.role === 'user' && (
-                    <div
-                      className="flex items-center justify-center w-8 h-8 rounded-xl shrink-0 mt-0.5 gb-card"
-                    >
-                      <User className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-                    </div>
-                  )}
                 </div>
               ))}
 
