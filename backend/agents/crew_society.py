@@ -1,9 +1,9 @@
 from crewai import Agent, Task, Crew, Process
-from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+from crewai_tools import SerperDevTool
 from llm_config import get_llm
 from supabase_client import supabase
 
-ddg_search = DuckDuckGoSearchRun()
+search_tool = SerperDevTool()
 llm = get_llm()
 
 def execute_society_pipeline(task_id: str, description: str, doc_id: str):
@@ -21,7 +21,7 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
         backstory="Eres un hacker investigador en ecosistemas Web3. Estás encargado de sacar datos crudos reales, ejemplos y tendencias.",
         verbose=True,
         allow_delegation=False,
-        tools=[ddg_search],
+        tools=[search_tool],
         llm=llm
     )
     

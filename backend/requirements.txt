@@ -9,4 +9,3 @@ httpx
 pydantic
 langchain-openai
 langchain-community
-duckduckgo-search

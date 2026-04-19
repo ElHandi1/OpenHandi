@@ -4,19 +4,17 @@ from apscheduler.triggers.cron import CronTrigger
 from supabase_client import supabase
 from agents.crew_society import execute_society_pipeline
 from llm_config import get_llm
-from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+from crewai_tools import SerperDevTool
 
 scheduler = AsyncIOScheduler()
-ddg = DuckDuckGoSearchRun()
+search_tool = SerperDevTool()
 
 def run_simple_task(task_id: str, description: str):
     llm = get_llm()
-    # Una version basica de agente en python
+    # Ejecutamos con LLM simple
     try:
-        from langchain.agents import initialize_agent, AgentType
-        agent = initialize_agent([ddg], llm, agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
-        res = agent.invoke(f"Se te ha programado esta tarea bg: {description}. Resuelve y devuelve un resumen.")
-        return res['output']
+        res = llm.invoke(f"Se te ha programado esta tarea bg: {description}. Resuelve y devuelve un resumen. NO uses herramientas, solo tu conocimiento.")
+        return res.content
     except Exception as e:
         return f"Error ejecutando simple agente: {e}"
 
