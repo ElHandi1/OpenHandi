@@ -60,8 +60,13 @@ export default function DocumentsView() {
         fetchDocs();
         loadDoc(data.id);
         setIsEditing(true);
+      } else {
+        const errData = await res.json();
+        alert('Error creando el documento. ¿Añadiste la tabla SQL workspace_docs en Supabase? Detalle: ' + (errData.details || errData.error || 'Error Desconocido'));
       }
-    } catch (e) {}
+    } catch (e) {
+      alert('Error de conexión.');
+    }
   };
 
   const saveDoc = async () => {
