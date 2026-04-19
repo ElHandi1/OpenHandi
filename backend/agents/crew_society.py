@@ -14,11 +14,15 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     
     current_doc = doc_res.data
     
+    # Provide strict time awareness to AI
+    from datetime import datetime
+    current_date = datetime.now().strftime("%d de %B de %Y")
+    
     # Define Agents
     investigator = Agent(
         role="Investigador Web Senior Web3",
-        goal="Buscar en internet datos actualizados, técnicos y relevantes sobre la misión solicitada.",
-        backstory="Eres un hacker investigador en ecosistemas Web3. Estás encargado de sacar datos crudos reales, ejemplos y tendencias.",
+        goal="Buscar en internet datos actualizados de HOY, técnicos y relevantes sobre la misión solicitada.",
+        backstory=f"Eres un hacker investigador en ecosistemas Web3. Hoy es **{current_date}**. Tu deber imperativo es buscar datos EXCLUSIVOS de la actualidad (año 2026), ignorando sucesos viejos a menos que se pidan. Extraes datos crudos reales, ejemplos y tendencias de hoy.",
         verbose=True,
         allow_delegation=False,
         tools=[search_tool],
