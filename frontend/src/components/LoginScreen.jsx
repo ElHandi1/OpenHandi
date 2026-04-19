@@ -54,7 +54,7 @@ export default function LoginScreen({ onLogin }) {
           <img
             src="/login-logo.png"
             alt="OpenHandi logo"
-            className="w-20 h-20 object-contain drop-shadow-xl"
+            className="w-28 h-28 object-contain drop-shadow-xl"
           />
           <div className="text-center">
             <h1
