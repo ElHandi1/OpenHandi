@@ -13,7 +13,7 @@ const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 // Errors that are transient (server overloaded) — worth retrying same model
 const TRANSIENT_CODES = new Set([429, 503, 504]);
 
-export async function callLLM(messages, retries = 5) {
+export async function callLLM(messages, retries = 5, tools = null) {
   // Try PRIMARY_MODEL for the first (retries - 1) attempts, FALLBACK_MODEL on the last
   for (let attempt = 0; attempt < retries; attempt++) {
     const isLastAttempt = attempt === retries - 1;
@@ -22,17 +22,23 @@ export async function callLLM(messages, retries = 5) {
     try {
       console.log(`LLM attempt ${attempt + 1}/${retries} using model: ${model}`);
 
+      const bodyPayload = {
+        model: model,
+        messages: messages,
+      };
+
+      if (tools && tools.length > 0) {
+        bodyPayload.tools = tools;
+        bodyPayload.tool_choice = 'auto'; // allow the model to decide when to call tools
+      }
+
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${NVIDIA_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          // tools can be injected here
-        })
+        body: JSON.stringify(bodyPayload)
       });
 
       // 404 = model not found — permanent error, no point retrying at all

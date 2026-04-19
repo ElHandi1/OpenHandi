@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../supabase.js';
 import { callLLM } from '../llm.js';
+import { searchSchema, executeSearch } from '../tools/search.js';
 
 const router = express.Router();
 const CONTEXT_WINDOW = parseInt(process.env.CONTEXT_WINDOW || '20', 10);
@@ -66,15 +67,43 @@ router.post('/', async (req, res, next) => {
     history.reverse();
 
     // 3. Prepare payload
-    const messagesPayload = [
+    let messagesPayload = [
       { role: 'system', content: 'You are OpenHandi, a highly capable persistent personal assistant. You manage tasks and help the user efficiently. Always respond entirely in Spanish. Never use Chinese characters.' },
       ...history.map(m => ({ role: m.role, content: m.content }))
     ];
 
-    // 4. Call Model
-    const assistantMsg = await callLLM(messagesPayload);
+    const tools = [searchSchema];
+    
+    // 4. Call Model (Agent Loop)
+    let assistantMsg = await callLLM(messagesPayload, 5, tools);
+    let loopCount = 0;
 
-    // 5. Save assistant msg
+    while (assistantMsg.tool_calls && loopCount < 3) {
+      loopCount++;
+      // Agregar la directiva de tool_calls al historial para que el LLM sepa qué llamó
+      messagesPayload.push(assistantMsg);
+
+      for (const tCall of assistantMsg.tool_calls) {
+        if (tCall.function.name === 'search_web') {
+           const args = JSON.parse(tCall.function.arguments);
+           const result = await executeSearch(args.query);
+           messagesPayload.push({
+             role: 'tool',
+             tool_call_id: tCall.id,
+             name: tCall.function.name,
+             content: result
+           });
+        }
+      }
+      // Llamar al LLM nuevamente con los resultados de las herramientas
+      assistantMsg = await callLLM(messagesPayload, 5, tools);
+    }
+
+    if (!assistantMsg.content) {
+      assistantMsg.content = "Terminé de buscar pero no puedo darte una respuesta textual clara en este momento.";
+    }
+
+    // 5. Save assistant msg (solo guardamos la respuesta sintetizada final)
     const { error: asstErr } = await supabase.from('messages').insert({ role: 'assistant', content: assistantMsg.content, session_id });
     if (asstErr) throw asstErr;
 
