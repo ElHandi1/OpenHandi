@@ -9,7 +9,10 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("Faltan variables de entorno SUPABASE_URL y SUPABASE_KEY o SUPABASE_ANON_KEY en Render")
+    print("❌ ERROR CRÍTICO: Faltan variables SUPABASE_URL o SUPABASE_KEY en Render!")
+    # Usamos dummy values para que Uvicorn no crashee y el servidor web levante
+    SUPABASE_URL = "https://placeholder-no-funciona.co"
+    SUPABASE_KEY = "placeholder"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
