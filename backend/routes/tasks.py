@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 from supabase_client import supabase, verify_token
+from scheduler_py import execute_task
 
 router = APIRouter()
 
@@ -31,6 +32,11 @@ def create_task(task: TaskCreate, token: str = Depends(verify_token)):
             "doc_id": task.doc_id,
             "is_active": True
         }).execute()
+        
+        # Sincronizar scheduler después de crear tarea
+        from scheduler_py import sync_tasks_from_db
+        sync_tasks_from_db()
+        
         return res.data[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -52,7 +58,27 @@ def toggle_task(id: str, token: str = Depends(verify_token)):
             raise HTTPException(status_code=404, detail="Task no encontrada")
         new_state = not task_res.data["is_active"]
         res = supabase.table("cron_tasks").update({"is_active": new_state}).eq("id", id).execute()
+        
+        # Sincronizar scheduler después de modificar estado
+        from scheduler_py import sync_tasks_from_db
+        sync_tasks_from_db()
+        
         return res.data[0]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
+@router.post("/{id}/run")
+def trigger_task_run(id: str, background_tasks: BackgroundTasks, token: str = Depends(verify_token)):
+    try:
+        task_res = supabase.table("cron_tasks").select("*").eq("id", id).single().execute()
+        if not task_res.data:
+            raise HTTPException(status_code=404, detail="Task no encontrada")
+            
+        task_data = task_res.data
+        # Ejecutar en segundo plano para no bloquear el request de la interfaz
+        background_tasks.add_task(execute_task, task_data)
+        
+        return {"success": True, "message": "Ejecución iniciada en background"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
