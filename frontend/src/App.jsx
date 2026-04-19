@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageSquare, ListTodo, LogOut, Bot } from 'lucide-react';
+import { MessageSquare, ListTodo, LogOut } from 'lucide-react';
 import ChatView from './views/ChatView';
 import TasksDashboard from './views/TasksDashboard';
 import LoginScreen from './components/LoginScreen';
@@ -62,15 +62,12 @@ function App() {
             className="flex items-center gap-2.5 px-4 h-14 shrink-0"
             style={{ borderBottom: '1px solid var(--border)' }}
           >
-            <div
-              className="flex items-center justify-center w-7 h-7 rounded-lg"
-              style={{
-                background: 'var(--accent)',
-                boxShadow: '0 2px 8px rgba(224,65,58,0.35)',
-              }}
-            >
-              <Bot className="w-4 h-4 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="OpenHandi logo"
+              className="w-7 h-7 rounded-lg object-contain"
+              style={{ background: 'transparent' }}
+            />
             <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               OpenHandi
             </span>
