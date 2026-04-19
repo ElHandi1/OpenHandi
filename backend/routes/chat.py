@@ -62,7 +62,12 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         # Recuperar historial para el contexto
         history_res = supabase.table("messages").select("role, content").eq("session_id", session_id).order("created_at", desc=False).execute()
         
-        messages_dict = [{"role": m["role"], "content": m["content"]} for m in history_res.data]
+        system_prompt = {
+            "role": "system",
+            "content": "Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. NUNCA uses chino ni caracteres asiáticos. Habla SIEMPRE en español claro y conciso, usando jerga hacker o tecnológica si aplica. Sé directo."
+        }
+        
+        messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
         
         try:
             llm = get_llm()
