@@ -220,11 +220,11 @@ export default function ChatView() {
         {/* Empty state */}
         {messages.length === 0 && !isLoading && (
           <div className="flex-1 flex flex-col items-center justify-center gap-5 animate-fade-in px-6">
-            <div
-              className="flex items-center justify-center w-14 h-14 rounded-2xl gb-elevated"
-            >
-              <Bot className="w-7 h-7" style={{ color: 'var(--accent)' }} />
-            </div>
+            <img
+              src="/login-logo.png"
+              alt="OpenHandi logo"
+              className="w-20 h-20 object-contain drop-shadow-lg"
+            />
             <div className="text-center">
               <p className="text-base font-semibold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
                 OpenHandi
