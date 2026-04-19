@@ -14,6 +14,10 @@ class ChatRequest(BaseModel):
     messages: List[Message]
     thread_id: str
 
+@router.get("/verify")
+def verify_access(token: str = Depends(verify_token)):
+    return {"success": True}
+
 @router.post("/")
 def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
     try:
