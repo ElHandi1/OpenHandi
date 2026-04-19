@@ -4,10 +4,12 @@ import { Trash2, Zap, Clock, Plus, RefreshCw, Circle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import TaskLogsModal from '../components/TaskLogsModal';
+import CreateTaskModal from '../components/CreateTaskModal';
 
 export default function TasksDashboard() {
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const token = localStorage.getItem('openhandi_token') || '';
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -84,7 +86,7 @@ export default function TasksDashboard() {
           </h1>
           <span className="badge">{tasks.length} tareas</span>
         </div>
-        <button className="btn-primary">
+        <button onClick={() => setIsCreateModalOpen(true)} className="btn-primary">
           <Plus className="w-3.5 h-3.5" />
           Nueva tarea
         </button>
@@ -106,7 +108,7 @@ export default function TasksDashboard() {
               Crea tu primera tarea automatizada
             </p>
           </div>
-          <button className="btn-outline text-xs">
+          <button onClick={() => setIsCreateModalOpen(true)} className="btn-outline text-xs">
             <Plus className="w-3.5 h-3.5" /> Crear tarea
           </button>
         </div>
@@ -248,6 +250,13 @@ export default function TasksDashboard() {
           token={token}
         />
       )}
+
+      {/* Creation Modal */}
+      <CreateTaskModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onTaskCreated={fetchTasks} 
+      />
     </div>
   );
 }
