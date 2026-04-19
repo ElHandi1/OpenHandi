@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { X, Server, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
   const [logs, setLogs] = useState([]);
@@ -20,6 +22,16 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
   };
 
   useEffect(() => { fetchLogs(); }, [taskId]);
+
+  const parseLogOutput = (out) => {
+    if (!out) return '';
+    try {
+      const parsed = JSON.parse(out);
+      return parsed.payload || parsed.message || out;
+    } catch(e) {
+      return out;
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -51,7 +63,7 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
               className="text-sm font-semibold"
               style={{ color: 'var(--text-primary)', letterSpacing: '-0.015em' }}
             >
-              Registros de Ejecucion
+              Registros de Ejecucion (Auditoría)
             </span>
           </div>
           <div className="flex items-center gap-1">
@@ -75,8 +87,7 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
 
         {/* Body */}
         <div
-          className="flex-1 overflow-y-auto p-4 flex flex-col gap-2"
-          style={{ background: 'var(--bg-surface)' }}
+          className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 bg-zinc-950"
         >
           {/* Loading */}
           {loading && (
@@ -98,7 +109,7 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
           {!loading && logs.map((log) => (
             <div
               key={log.id}
-              className="rounded-xl overflow-hidden animate-fade-in gb-card"
+              className="rounded-xl overflow-hidden animate-fade-in border border-zinc-800 bg-zinc-900/50"
             >
               {/* Log header row */}
               <div
@@ -115,7 +126,7 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
                     className="text-xs font-semibold uppercase tracking-wider"
                     style={{ color: log.status === 'success' ? '#7ee8a2' : '#ff8080' }}
                   >
-                    {log.status === 'success' ? 'Exitoso' : 'Error'}
+                    {log.status === 'success' ? 'Pipeline Exitoso' : 'Error en Pipeline'}
                   </span>
                 </div>
                 <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -127,17 +138,13 @@ export default function TaskLogsModal({ taskId, onClose, apiUrl, token }) {
 
               {/* Log body */}
               {(log.output || log.error) && (
-                <div className="p-4 flex flex-col gap-2" style={{ background: 'var(--bg-surface)' }}>
+                <div className="p-4 flex flex-col gap-2">
                   {log.output && (
-                    <pre
-                      className="text-xs leading-relaxed whitespace-pre-wrap break-words"
-                      style={{
-                        color: 'var(--text-secondary)',
-                        fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                      }}
-                    >
-                      {log.output}
-                    </pre>
+                    <div className="prose-minimal text-xs max-w-none text-zinc-300">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {parseLogOutput(log.output)}
+                      </ReactMarkdown>
+                    </div>
                   )}
                   {log.error && (
                     <pre
