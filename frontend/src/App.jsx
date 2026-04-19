@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageSquare, ListTodo, LogOut } from 'lucide-react';
+import { MessageSquare, ListTodo, LogOut, FileText } from 'lucide-react';
 import ChatView from './views/ChatView';
 import TasksDashboard from './views/TasksDashboard';
+import DocumentsView from './views/DocumentsView';
 import LoginScreen from './components/LoginScreen';
 
 function App() {
@@ -78,6 +79,7 @@ function App() {
             {[
               { to: '/', end: true,  icon: <MessageSquare className="w-4 h-4 shrink-0" />, label: 'Chat' },
               { to: '/tasks', icon: <ListTodo className="w-4 h-4 shrink-0" />, label: 'Tareas' },
+              { to: '/docs', icon: <FileText className="w-4 h-4 shrink-0" />, label: 'Documentos' },
             ].map(({ to, end, icon, label }) => (
               <NavLink
                 key={to}
@@ -148,6 +150,7 @@ function App() {
             <Route path="/" element={<ChatView />} />
             <Route path="/c/:id" element={<ChatView />} />
             <Route path="/tasks" element={<TasksDashboard />} />
+            <Route path="/docs" element={<DocumentsView />} />
           </Routes>
         </main>
 

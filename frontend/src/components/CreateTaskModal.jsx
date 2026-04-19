@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Loader2, Users, FileText, Settings, Bot } from 'lucide-react';
 
 export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [schedule, setSchedule] = useState('0 9 * * *');
+  const [taskType, setTaskType] = useState('simple');
+  const [docId, setDocId] = useState('');
+  
+  const [docs, setDocs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const token = localStorage.getItem('openhandi_token') || '';
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+  useEffect(() => {
+    if (isOpen && taskType === 'society') {
+      fetch(`${apiUrl}/api/docs`, { headers: { 'x-assistant-token': token } })
+        .then(res => res.json())
+        .then(data => {
+          setDocs(data);
+          if(data.length > 0 && !docId) setDocId(data[0].id);
+        })
+        .catch(console.error);
+    }
+  }, [isOpen, taskType]);
 
   if (!isOpen) return null;
 
@@ -16,26 +35,29 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
 
     setIsLoading(true);
     setError(null);
-    const token = localStorage.getItem('openhandi_token') || '';
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+    const payload = { 
+      name, 
+      description, 
+      schedule,
+      task_type: taskType,
+      doc_id: taskType === 'society' ? docId : null
+    };
 
     try {
       const res = await fetch(`${apiUrl}/api/tasks`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-assistant-token': token
-        },
-        body: JSON.stringify({ name, description, schedule })
+        headers: { 'Content-Type': 'application/json', 'x-assistant-token': token },
+        body: JSON.stringify(payload)
       });
 
-      if (!res.ok) {
-        throw new Error('No se pudo crear la tarea.');
-      }
+      if (!res.ok) throw new Error('No se pudo crear la tarea.');
 
       setName('');
       setDescription('');
       setSchedule('0 9 * * *');
+      setTaskType('simple');
+      setDocId('');
       onTaskCreated();
       onClose();
     } catch (err) {
@@ -67,13 +89,30 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
           {error && <div className="text-xs text-red-400 bg-red-950/20 p-2 rounded">{error}</div>}
           
+          <div className="flex bg-black/20 p-1 rounded-xl" style={{ border: '1px solid var(--border)' }}>
+             <button
+               type="button"
+               onClick={() => setTaskType('simple')}
+               className={`flex-1 flex items-center justify-center gap-2 text-xs py-2 rounded-lg font-medium transition-all ${taskType === 'simple' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+             >
+               <Bot className="w-3.5 h-3.5" /> 1 Agente
+             </button>
+             <button
+               type="button"
+               onClick={() => setTaskType('society')}
+               className={`flex-1 flex items-center justify-center gap-2 text-xs py-2 rounded-lg font-medium transition-all ${taskType === 'society' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
+             >
+               <Users className="w-3.5 h-3.5" /> 3 Agentes (Sociedad)
+             </button>
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Nombre de la tarea</label>
             <input 
               type="text" 
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Ej: Resumen de IA Diario"
+              placeholder="Ej: Resumen de Web3 Hackathons"
               className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full"
               style={{ color: 'var(--text-primary)', border: '1px solid var(--border)' }}
               required
@@ -81,11 +120,11 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Descripción / Prompt (Misión del agente)</label>
+            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Misión</label>
             <textarea 
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="¿Qué debe investigar el agente en background?"
+              placeholder={taskType === 'society' ? "Investiga tendencias Web3, escribe tips para el juez, y audita." : "¿Qué debe investigar el agente?"}
               rows={3}
               className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full resize-none"
               style={{ color: 'var(--text-primary)', border: '1px solid var(--border)' }}
@@ -93,27 +132,48 @@ export default function CreateTaskModal({ isOpen, onClose, onTaskCreated }) {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Horario (Expresión Cron)</label>
+          {taskType === 'society' && (
+             <div className="flex flex-col gap-1.5 animate-slide-up">
+              <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--accent)' }}>
+                <FileText className="w-3.5 h-3.5" /> Documento a Modificar
+              </label>
+              <select 
+                value={docId}
+                onChange={e => setDocId(e.target.value)}
+                className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full"
+                style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', appearance: 'none' }}
+                required={taskType === 'society'}
+              >
+                <option value="" disabled>Selecciona un Documento MD...</option>
+                {docs.map(d => (
+                  <option key={d.id} value={d.id}>{d.title}</option>
+                ))}
+              </select>
+             </div>
+          )}
+
+          <div className="flex flex-col gap-1.5 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
+            <label className="text-xs font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+               <Settings className="w-3 h-3" /> Horario (Expresión Cron)
+            </label>
             <input 
               type="text" 
               value={schedule}
               onChange={e => setSchedule(e.target.value)}
               placeholder="0 9 * * *"
-              className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full"
-              style={{ color: 'var(--text-primary)', border: '1px solid var(--border)', fontFamily: "'JetBrains Mono', monospace" }}
+              className="gb-input px-3 py-2 text-sm rounded-lg outline-none w-full font-mono"
+              style={{ color: 'var(--text-primary)', border: '1px solid var(--border)' }}
               required
             />
-            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Por defecto: 0 9 * * * (Todos los días a las 9 AM)</span>
           </div>
 
           <div className="flex justify-end pt-2">
             <button 
               type="submit" 
-              disabled={isLoading || !name || !description || !schedule}
+              disabled={isLoading || !name || !description || !schedule || (taskType === 'society' && !docId)}
               className="btn-primary w-full justify-center"
             >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Crear Tarea'}
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Crear Orquestación'}
             </button>
           </div>
         </form>

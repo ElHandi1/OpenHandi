@@ -5,6 +5,7 @@ import { initScheduler } from './scheduler.js';
 
 import chatRoutes from './routes/chat.js';
 import tasksRoutes from './routes/tasks.js';
+import docsRoutes from './routes/docs.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use(requireAuth);
 app.get('/health', (req, res) => res.status(200).send('OK'));
 app.use('/api/chat', chatRoutes);
 app.use('/api/tasks', tasksRoutes);
+app.use('/api/docs', docsRoutes);
 
 // Error Handler
 app.use((err, req, res, next) => {
