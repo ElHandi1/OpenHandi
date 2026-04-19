@@ -306,7 +306,7 @@ export default function ChatView() {
           style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-base)' }}
         >
           <div className="max-w-3xl mx-auto">
-            <div className="gb-input flex items-end gap-3 p-3 rounded-2xl">
+            <div className="gb-input flex items-center gap-3 p-3 rounded-2xl">
               <textarea
                 ref={textareaRef}
                 rows={1}
@@ -340,7 +340,7 @@ export default function ChatView() {
               </button>
             </div>
             <p className="text-center mt-2.5 text-xs" style={{ color: 'var(--text-muted)' }}>
-              OpenHandi · Minimax Core via OpenRouter
+              OpenHandi · Minimax Core
             </p>
           </div>
         </div>

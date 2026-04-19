@@ -98,8 +98,8 @@
     background:
       linear-gradient(var(--bg-surface), var(--bg-surface)) padding-box,
       linear-gradient(145deg,
-        rgba(255, 255, 255, 0.18) 0%,
-        rgba(224,  65,  58, 0.35) 100%
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0.10) 100%
       ) border-box;
   }
 
@@ -150,8 +150,8 @@
   }
   .input::placeholder { color: var(--text-muted); }
   .input:focus {
-    border-color: var(--border-mid);
-    box-shadow: 0 0 0 3px rgba(224, 65, 58, 0.10);
+    border-color: var(--border-strong);
+    box-shadow: none;
     outline: none;
   }
 
