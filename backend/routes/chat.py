@@ -39,6 +39,7 @@ def delete_session(id: str, token: str = Depends(verify_token)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("")
 @router.post("/")
 def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
     try:
