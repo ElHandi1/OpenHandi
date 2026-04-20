@@ -42,16 +42,18 @@ def delete_session(id: str, token: str = Depends(verify_token)):
 @router.post("")
 @router.post("/")
 def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
+    import time
+    t0 = time.time()
     try:
         session_id = req.session_id
+        print(f"[Chat] Solicitud recibida. session_id={session_id}")
         
-        # Si no hay sesion, crearla
+        # Crear sesion con el propio texto como titulo (sin llamada LLM extra)
         if not session_id:
-            title_res = get_llm().invoke([{"role": "user", "content": f"Resume este mensaje en 3 o 4 palabras: {req.message}"}])
-            title = title_res.content.replace('"', '').strip()
-            
+            title = req.message[:50].strip()
             session_res = supabase.table("sessions").insert({"title": title}).execute()
             session_id = session_res.data[0]["id"]
+            print(f"[Chat] Nueva sesion creada: {session_id}")
             
         # Guardar mensaje del usuario
         supabase.table("messages").insert({
@@ -60,7 +62,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
             "content": req.message
         }).execute()
         
-        # Recuperar historial para el contexto
+        # Recuperar historial
         history_res = supabase.table("messages").select("role, content").eq("session_id", session_id).order("created_at", desc=False).execute()
         
         from datetime import datetime
@@ -68,35 +70,39 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         system_prompt = {
             "role": "system",
-            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}, confía plenamente en esta fecha. NUNCA uses chino ni caracteres asiáticos. Habla SIEMPRE en español claro y conciso, usando jerga hacker o tecnológica si aplica. Sé directo."
+            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Responde SIEMPRE en español coloquial, conciso y directo. Sé breve: respuestas cortas si la pregunta es corta."
         }
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
+        
+        print(f"[Chat] Llamando al LLM con {len(messages_dict)} mensajes...")
+        t_llm = time.time()
         
         try:
             llm = get_llm()
             res = llm.invoke(messages_dict)
         except Exception as primary_e:
-            print(f"Primary model failed: {primary_e}. Trying fallback...")
+            print(f"[Chat] Modelo primario falló ({primary_e}), usando fallback...")
             fallback_llm = get_fallback_llm()
             res = fallback_llm.invoke(messages_dict)
             
         ai_response = res.content
+        print(f"[Chat] LLM tardó {time.time()-t_llm:.1f}s | Total hasta ahora: {time.time()-t0:.1f}s")
         
-        # Guardar respuesta IA
+        # Guardar respuesta y actualizar sesion
         supabase.table("messages").insert({
             "session_id": session_id,
             "role": "assistant",
             "content": ai_response
         }).execute()
-        
-        # Actualizar updated_at de la sesion
         supabase.table("sessions").update({"updated_at": "now()"}).eq("id", session_id).execute()
         
+        print(f"[Chat] Respuesta total en {time.time()-t0:.1f}s")
         return {
             "session_id": session_id,
             "response": ai_response
         }
     except Exception as e:
-        print(f"Chat Error: {e}")
-        raise HTTPException(status_code=500, detail="Error de comunicación con el agente (NVIDIA API)")
+        print(f"[Chat] ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Error del agente: {str(e)}")
+
