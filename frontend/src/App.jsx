@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
-import { MessageSquare, ListTodo, LogOut, FileText } from 'lucide-react';
+import { MessageSquare, ListTodo, LogOut, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import ChatView from './views/ChatView';
 import TasksDashboard from './views/TasksDashboard';
 import DocumentsView from './views/DocumentsView';
@@ -9,6 +9,8 @@ import LoginScreen from './components/LoginScreen';
 function App() {
   const [authToken, setAuthToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
@@ -51,31 +53,67 @@ function App() {
 
         {/* ── Side Rail ── */}
         <aside
-          className="flex flex-col shrink-0 h-full"
+          className="flex flex-col shrink-0 h-full transition-all duration-300 ease-in-out"
           style={{
-            width: '220px',
+            width: isCollapsed ? '64px' : '200px',
             borderRight: '1px solid var(--border)',
             background: 'var(--bg-surface)',
           }}
         >
-          {/* Logo */}
+          {/* Logo & Toggle Header */}
           <div
-            className="flex items-center gap-2.5 px-4 h-14 shrink-0"
-            style={{ borderBottom: '1px solid var(--border)' }}
+            className="flex items-center h-14 shrink-0 transition-all duration-200"
+            style={{ 
+              borderBottom: '1px solid var(--border)',
+              padding: isCollapsed ? '0' : '0 1rem',
+              justifyContent: isCollapsed ? 'center' : 'space-between'
+            }}
+            onMouseEnter={() => setIsHeaderHovered(true)}
+            onMouseLeave={() => setIsHeaderHovered(false)}
           >
-            <img
-              src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
-              alt="OpenHandi logo"
-              className="w-7 h-7 rounded-lg object-contain"
-              style={{ background: 'transparent' }}
-            />
-            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              OpenHandi
-            </span>
+            {isCollapsed ? (
+              <button 
+                onClick={() => setIsCollapsed(false)}
+                className="w-full h-full flex items-center justify-center transition-all"
+                title="Expandir menú"
+              >
+                {isHeaderHovered ? (
+                  <PanelLeftOpen className="w-5 h-5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" />
+                ) : (
+                  <img
+                    src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
+                    alt="OpenHandi logo"
+                    className="w-7 h-7 rounded-md object-contain"
+                    style={{ background: 'transparent' }}
+                  />
+                )}
+              </button>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <img
+                    src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
+                    alt="OpenHandi logo"
+                    className="w-6 h-6 rounded-md object-contain shrink-0"
+                    style={{ background: 'transparent' }}
+                  />
+                  <span className="font-semibold text-sm whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                    OpenHandi
+                  </span>
+                </div>
+                <button 
+                  onClick={() => setIsCollapsed(true)} 
+                  className="shrink-0 p-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  title="Contraer menú"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 p-2 flex flex-col gap-0.5">
+          <nav className={`flex-1 flex flex-col gap-1 ${isCollapsed ? 'p-2 items-center' : 'p-3'}`}>
             {[
               { to: '/', end: true,  icon: <MessageSquare className="w-4 h-4 shrink-0" />, label: 'Chat' },
               { to: '/tasks', icon: <ListTodo className="w-4 h-4 shrink-0" />, label: 'Tareas' },
@@ -87,60 +125,52 @@ function App() {
                 end={end}
                 className={({ isActive }) =>
                   [
-                    'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium w-full transition-all duration-100',
-                    isActive ? 'gb-card' : '',
+                    'flex items-center rounded-lg text-sm font-medium transition-all duration-100',
+                    isCollapsed ? 'justify-center w-10 h-10 p-0' : 'gap-2.5 px-3 py-2 w-full custom-nav-expanded',
+                    isActive ? 'gb-card shadow-sm' : 'hover:bg-[var(--bg-elevated)]',
                   ].join(' ')
                 }
+                title={isCollapsed ? label : undefined}
                 style={({ isActive }) => ({
                   color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                 })}
-                onMouseEnter={e => {
-                  if (!e.currentTarget.classList.contains('gb-card')) {
-                    e.currentTarget.style.background = 'var(--bg-elevated)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!e.currentTarget.classList.contains('gb-card')) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }
-                }}
               >
                 {icon}
-                <span>{label}</span>
+                {!isCollapsed && <span className="whitespace-nowrap overflow-hidden text-ellipsis">{label}</span>}
               </NavLink>
             ))}
           </nav>
 
           {/* Footer */}
-          <div className="p-2 shrink-0" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className={`shrink-0 flex flex-col gap-2 ${isCollapsed ? 'p-2 items-center' : 'p-3'}`} style={{ borderTop: '1px solid var(--border)' }}>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm w-full font-medium transition-all duration-100"
+              className={`flex items-center rounded-lg text-sm font-medium transition-all duration-100 hover:bg-[var(--bg-elevated)] ${isCollapsed ? 'justify-center w-10 h-10 p-0' : 'gap-2.5 px-3 py-2 w-full'}`}
               style={{ color: 'var(--text-muted)' }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'var(--bg-elevated)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.color = 'var(--text-muted)';
-              }}
+              title={isCollapsed ? "Cerrar sesión" : undefined}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
             >
               <LogOut className="w-4 h-4 shrink-0" />
-              <span>Cerrar sesion</span>
+              {!isCollapsed && <span className="whitespace-nowrap overflow-hidden text-ellipsis">Cerrar sesión</span>}
             </button>
 
-            <div className="flex items-center gap-2 px-3 py-2 mt-1">
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50"
-                  style={{ background: 'var(--accent)' }} />
-                <span className="relative inline-flex rounded-full h-2 w-2"
-                  style={{ background: 'var(--accent)' }} />
-              </span>
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Sistema activo</span>
-            </div>
+            {isCollapsed ? (
+              <div className="w-10 h-6 flex items-center justify-center cursor-default" title="Sistema activo">
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50" style={{ background: 'var(--accent)' }} />
+                  <span className="relative inline-flex rounded-full h-2 w-2" style={{ background: 'var(--accent)' }} />
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-1 mt-1 cursor-default">
+                <span className="relative flex h-1.5 w-1.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-50" style={{ background: 'var(--accent)' }} />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--accent)' }} />
+                </span>
+                <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: 'var(--text-muted)' }}>Sistema activo</span>
+              </div>
+            )}
           </div>
         </aside>
 
