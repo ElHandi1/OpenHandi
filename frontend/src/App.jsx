@@ -39,12 +39,16 @@ function App() {
   useEffect(() => {
     if (isCollapsed) {
       if (isHeaderHovered) {
-        gsap.to(logoImgRef.current, { opacity: 0.25, filter: 'blur(3px)', duration: 0.3, ease: 'power2.out' });
+        // Retrasamos la aparicion para que no buguee al cerrarse y pasar por el mouse
+        gsap.to(logoImgRef.current, { opacity: 0.25, filter: 'blur(3px)', duration: 0.3, ease: 'power2.out', delay: 0.5 });
         gsap.fromTo(collapseIconRef.current, 
           { scale: 0, opacity: 0, rotation: -45, display: 'flex' },
-          { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: 'back.out(1.7)' }
+          { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: 'back.out(1.7)', delay: 0.5 }
         );
       } else {
+        // Matamos cualquier animacion atrasada si saca el mouse antes de que pase el delay
+        gsap.killTweensOf([logoImgRef.current, collapseIconRef.current]);
+        
         gsap.to(logoImgRef.current, { opacity: 1, filter: 'blur(0px)', duration: 0.3, ease: 'power2.out' });
         gsap.to(collapseIconRef.current, { 
           scale: 0, opacity: 0, rotation: 45, duration: 0.3, ease: 'power2.in',
@@ -52,7 +56,9 @@ function App() {
         });
       }
     } else {
+      gsap.killTweensOf([logoImgRef.current, collapseIconRef.current]);
       gsap.set(logoImgRef.current, { opacity: 1, filter: 'blur(0px)' });
+      gsap.set(collapseIconRef.current, { display: 'none' });
     }
   }, [isHeaderHovered, isCollapsed]);
 
