@@ -1,9 +1,14 @@
 import uuid
+import time
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from supabase_client import supabase, verify_token
 from llm_config import get_llm, get_fallback_llm
+
+log = logging.getLogger("openhandi")
+
 
 router = APIRouter()
     
@@ -42,27 +47,23 @@ def delete_session(id: str, token: str = Depends(verify_token)):
 @router.post("")
 @router.post("/")
 def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
-    import time
     t0 = time.time()
     try:
         session_id = req.session_id
-        print(f"[Chat] Solicitud recibida. session_id={session_id}")
+        log.info(f"[Chat] Solicitud recibida. session_id={session_id}")
         
-        # Crear sesion con el propio texto como titulo (sin llamada LLM extra)
         if not session_id:
             title = req.message[:50].strip()
             session_res = supabase.table("sessions").insert({"title": title}).execute()
             session_id = session_res.data[0]["id"]
-            print(f"[Chat] Nueva sesion creada: {session_id}")
+            log.info(f"[Chat] Nueva sesion creada: {session_id}")
             
-        # Guardar mensaje del usuario
         supabase.table("messages").insert({
             "session_id": session_id,
             "role": "user",
             "content": req.message
         }).execute()
         
-        # Recuperar historial
         history_res = supabase.table("messages").select("role, content").eq("session_id", session_id).order("created_at", desc=False).execute()
         
         from datetime import datetime
@@ -75,21 +76,20 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
         
-        print(f"[Chat] Llamando al LLM con {len(messages_dict)} mensajes...")
+        log.info(f"[Chat] Llamando al LLM con {len(messages_dict)} mensajes en contexto...")
         t_llm = time.time()
         
         try:
             llm = get_llm()
             res = llm.invoke(messages_dict)
         except Exception as primary_e:
-            print(f"[Chat] Modelo primario falló ({primary_e}), usando fallback...")
+            log.warning(f"[Chat] Modelo primario falló ({primary_e}), usando fallback...")
             fallback_llm = get_fallback_llm()
             res = fallback_llm.invoke(messages_dict)
             
         ai_response = res.content
-        print(f"[Chat] LLM tardó {time.time()-t_llm:.1f}s | Total hasta ahora: {time.time()-t0:.1f}s")
+        log.info(f"[Chat] LLM respondió en {time.time()-t_llm:.1f}s | Total: {time.time()-t0:.1f}s")
         
-        # Guardar respuesta y actualizar sesion
         supabase.table("messages").insert({
             "session_id": session_id,
             "role": "assistant",
@@ -97,12 +97,11 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         }).execute()
         supabase.table("sessions").update({"updated_at": "now()"}).eq("id", session_id).execute()
         
-        print(f"[Chat] Respuesta total en {time.time()-t0:.1f}s")
         return {
             "session_id": session_id,
             "response": ai_response
         }
     except Exception as e:
-        print(f"[Chat] ERROR: {e}")
+        log.error(f"[Chat] ERROR: {e}")
         raise HTTPException(status_code=500, detail=f"Error del agente: {str(e)}")
 
