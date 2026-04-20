@@ -1,10 +1,9 @@
 from crewai import Agent, Task, Crew, Process
 from crewai_tools import SerperDevTool
-from llm_config import get_llm
+from llm_config import get_investigator_llm, get_writer_llm, get_auditor_llm
 from supabase_client import supabase
 
 search_tool = SerperDevTool()
-llm = get_llm()
 
 def execute_society_pipeline(task_id: str, description: str, doc_id: str):
     # Retrieve Document
@@ -28,7 +27,7 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
         verbose=True,
         allow_delegation=False,
         tools=[search_tool],
-        llm=llm
+        llm=get_investigator_llm()
     )
     
     writer = Agent(
@@ -37,7 +36,7 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
         backstory="Eres un Technical Writer experto en documentación de software. Sabes inyectar datos en archivos MD sin destruir su formato estructural. NUNCA uses chino ni caracteres asiáticos. Habla y escribe SIEMPRE en español nativo perfectamente.",
         verbose=True,
         allow_delegation=False,
-        llm=llm
+        llm=get_writer_llm()
     )
 
     auditor = Agent(
@@ -46,8 +45,9 @@ def execute_society_pipeline(task_id: str, description: str, doc_id: str):
         backstory="Eres un CTO exigente. Si el documento tiene formato roto, usa palabras en CHINO, es genérico o dice tonterías, debes RECHAZARLO. Si aporta datos de calidad actuales y está 100% en español, debes dar el veredicto: 'APROBADO'. NUNCA uses chino en tu propia respuesta.",
         verbose=True,
         allow_delegation=False,
-        llm=llm
+        llm=get_auditor_llm()
     )
+
     
     # Define Tasks
     task_research = Task(
