@@ -53,7 +53,7 @@ def sync_tasks_from_db():
     print("[Scheduler] Sincronizando tareas desde Supabase...")
     scheduler.remove_all_jobs()
     
-    res = supabase.table("cron_tasks").select("*").eq("is_active", True).execute()
+    res = supabase.table("cron_tasks").select("*").eq("enabled", True).execute()
     tasks = res.data
     
     for task in tasks:

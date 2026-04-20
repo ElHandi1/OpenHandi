@@ -30,7 +30,7 @@ def create_task(task: TaskCreate, token: str = Depends(verify_token)):
             "schedule": task.schedule,
             "task_type": task.task_type,
             "doc_id": task.doc_id,
-            "is_active": True
+            "enabled": True
         }).execute()
         
         # Sincronizar scheduler después de crear tarea
@@ -53,11 +53,11 @@ def delete_task(id: str, token: str = Depends(verify_token)):
 @router.post("/{id}/toggle")
 def toggle_task(id: str, token: str = Depends(verify_token)):
     try:
-        task_res = supabase.table("cron_tasks").select("is_active").eq("id", id).single().execute()
+        task_res = supabase.table("cron_tasks").select("enabled").eq("id", id).single().execute()
         if not task_res.data:
             raise HTTPException(status_code=404, detail="Task no encontrada")
-        new_state = not task_res.data["is_active"]
-        res = supabase.table("cron_tasks").update({"is_active": new_state}).eq("id", id).execute()
+        new_state = not task_res.data["enabled"]
+        res = supabase.table("cron_tasks").update({"enabled": new_state}).eq("id", id).execute()
         
         # Sincronizar scheduler después de modificar estado
         from scheduler_py import sync_tasks_from_db
