@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { MessageSquare, ListTodo, LogOut, FileText, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { gsap } from 'gsap';
 import ChatView from './views/ChatView';
 import TasksDashboard from './views/TasksDashboard';
 import DocumentsView from './views/DocumentsView';
@@ -11,6 +12,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  
+  const logoImgRef = useRef(null);
+  const collapseIconRef = useRef(null);
+
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
@@ -29,6 +34,27 @@ function App() {
     };
     checkToken();
   }, [apiUrl]);
+
+  // GSAP Animation for Hover
+  useEffect(() => {
+    if (isCollapsed) {
+      if (isHeaderHovered) {
+        gsap.to(logoImgRef.current, { opacity: 0.25, filter: 'blur(3px)', duration: 0.3, ease: 'power2.out' });
+        gsap.fromTo(collapseIconRef.current, 
+          { scale: 0, opacity: 0, rotation: -45, display: 'flex' },
+          { scale: 1, opacity: 1, rotation: 0, duration: 0.4, ease: 'back.out(1.7)' }
+        );
+      } else {
+        gsap.to(logoImgRef.current, { opacity: 1, filter: 'blur(0px)', duration: 0.3, ease: 'power2.out' });
+        gsap.to(collapseIconRef.current, { 
+          scale: 0, opacity: 0, rotation: 45, duration: 0.3, ease: 'power2.in',
+          onComplete: () => gsap.set(collapseIconRef.current, { display: 'none' })
+        });
+      }
+    } else {
+      gsap.set(logoImgRef.current, { opacity: 1, filter: 'blur(0px)' });
+    }
+  }, [isHeaderHovered, isCollapsed]);
 
   if (loading) return (
     <div style={{ background: 'var(--bg-base)' }} className="h-screen w-full flex items-center justify-center">
@@ -74,19 +100,19 @@ function App() {
             {isCollapsed ? (
               <button 
                 onClick={() => setIsCollapsed(false)}
-                className="w-full h-full flex items-center justify-center transition-all"
+                className="w-full h-full flex items-center justify-center transition-all relative"
                 title="Expandir menú"
               >
-                {isHeaderHovered ? (
-                  <PanelLeftOpen className="w-5 h-5 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" />
-                ) : (
-                  <img
-                    src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
-                    alt="OpenHandi logo"
-                    className="w-7 h-7 rounded-md object-contain"
-                    style={{ background: 'transparent' }}
-                  />
-                )}
+                <img
+                  ref={logoImgRef}
+                  src="https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/openclaw-color.png"
+                  alt="OpenHandi logo"
+                  className="w-7 h-7 rounded-md object-contain absolute z-0"
+                  style={{ background: 'transparent' }}
+                />
+                <div ref={collapseIconRef} className="absolute z-10 hidden items-center justify-center">
+                  <PanelLeftOpen className="w-5 h-5 text-[var(--text-primary)]" />
+                </div>
               </button>
             ) : (
               <>
