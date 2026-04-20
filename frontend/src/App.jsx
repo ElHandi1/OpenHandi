@@ -94,12 +94,12 @@ function App() {
               padding: isCollapsed ? '0' : '0 1rem',
               justifyContent: isCollapsed ? 'center' : 'space-between'
             }}
-            onMouseEnter={() => setIsHeaderHovered(true)}
-            onMouseLeave={() => setIsHeaderHovered(false)}
           >
             {isCollapsed ? (
               <button 
-                onClick={() => setIsCollapsed(false)}
+                onClick={() => { setIsCollapsed(false); setIsHeaderHovered(false); }}
+                onMouseEnter={() => setIsHeaderHovered(true)}
+                onMouseLeave={() => setIsHeaderHovered(false)}
                 className="w-full h-full flex items-center justify-center transition-all relative"
                 title="Expandir menú"
               >
@@ -128,7 +128,7 @@ function App() {
                   </span>
                 </div>
                 <button 
-                  onClick={() => setIsCollapsed(true)} 
+                  onClick={() => { setIsCollapsed(true); setIsHeaderHovered(false); }} 
                   className="shrink-0 p-1 rounded hover:bg-[var(--bg-elevated)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                   title="Contraer menú"
                 >
