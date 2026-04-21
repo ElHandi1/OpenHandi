@@ -55,6 +55,82 @@ def get_token_news(symbol: str, filter: str = "hot") -> str:
 
 
 @tool
+def get_token_data(symbol: str) -> str:
+    """Obtiene datos de mercado en tiempo real de un token cripto: precio actual, market cap, volumen 24h, cambio 24h, exchanges donde cotiza. Usa CoinGecko. SIEMPRE llama a esta herramienta cuando el usuario mencione un token con $."""
+    try:
+        # Step 1: buscar el coin ID por ticker
+        search_res = httpx.get(
+            "https://api.coingecko.com/api/v3/search",
+            params={"query": symbol},
+            timeout=10.0
+        )
+        search_res.raise_for_status()
+        coins = search_res.json().get("coins", [])
+        if not coins:
+            return f"Token '{symbol}' no encontrado en CoinGecko."
+        
+        # elegir el mas relevante (primero con ticker exacto o el primero)
+        coin_id = None
+        for c in coins[:5]:
+            if c.get("symbol", "").upper() == symbol.upper():
+                coin_id = c["id"]
+                break
+        if not coin_id:
+            coin_id = coins[0]["id"]
+
+        # Step 2: datos de mercado completos
+        market_res = httpx.get(
+            f"https://api.coingecko.com/api/v3/coins/{coin_id}",
+            params={
+                "localization": "false",
+                "tickers": "true",
+                "market_data": "true",
+                "community_data": "false",
+                "developer_data": "false"
+            },
+            timeout=12.0
+        )
+        market_res.raise_for_status()
+        d = market_res.json()
+        md = d.get("market_data", {})
+
+        price = md.get("current_price", {}).get("usd", "N/A")
+        mcap = md.get("market_cap", {}).get("usd", "N/A")
+        vol24h = md.get("total_volume", {}).get("usd", "N/A")
+        change24h = md.get("price_change_percentage_24h", "N/A")
+        change7d = md.get("price_change_percentage_7d", "N/A")
+        ath = md.get("ath", {}).get("usd", "N/A")
+        ath_date = md.get("ath_date", {}).get("usd", "")[:10]
+        atl = md.get("atl", {}).get("usd", "N/A")
+        supply = md.get("circulating_supply", "N/A")
+        total_supply = md.get("total_supply", "N/A")
+        rank = d.get("market_cap_rank", "N/A")
+        name = d.get("name", symbol)
+
+        # top exchanges
+        tickers = d.get("tickers", [])[:5]
+        exchanges = ", ".join([t.get("market", {}).get("name", "") for t in tickers if t.get("market")])
+
+        lines = [
+            f"### {name} ({symbol.upper()}) — Datos en tiempo real (CoinGecko)",
+            f"- **Precio actual:** ${price:,.6f}" if isinstance(price, float) else f"- **Precio actual:** ${price}",
+            f"- **Market Cap:** ${mcap:,.0f}" if isinstance(mcap, (int, float)) else f"- **Market Cap:** ${mcap}",
+            f"- **Volumen 24h:** ${vol24h:,.0f}" if isinstance(vol24h, (int, float)) else f"- **Volumen 24h:** ${vol24h}",
+            f"- **Cambio 24h:** {change24h:.2f}%" if isinstance(change24h, float) else f"- **Cambio 24h:** {change24h}%",
+            f"- **Cambio 7d:** {change7d:.2f}%" if isinstance(change7d, float) else f"- **Cambio 7d:** {change7d}%",
+            f"- **ATH:** ${ath} (alcanzado {ath_date})",
+            f"- **ATL:** ${atl}",
+            f"- **Ranking CoinGecko:** #{rank}",
+            f"- **Suministro circulante:** {supply:,.0f}" if isinstance(supply, (int, float)) else f"- **Suministro circulante:** {supply}",
+            f"- **Suministro total:** {total_supply:,.0f}" if isinstance(total_supply, (int, float)) else f"- **Suministro total:** {total_supply}",
+            f"- **Exchanges principales:** {exchanges}" if exchanges else "",
+        ]
+        return "\n".join(l for l in lines if l)
+    except Exception as e:
+        return f"Error obteniendo datos de CoinGecko para '{symbol}': {str(e)}"
+
+
+@tool
 def web_search(query: str) -> str:
     """Busca en internet información reciente y devuelve resúmenes junto con sus URLs. Si necesitas el contexto completo, invoca a read_webpage con la URL pertinente."""
     api_key = os.environ.get("SERPER_API_KEY")
@@ -150,10 +226,14 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         prompt_content = f"""Eres OpenHandi, un asistente experto construido por 'El Handi'. Hoy es {current_date_str}.
 
-Tienes tres herramientas de investigación:
+Tienes cuatro herramientas de investigación:
 1. web_search(query) — busca en Google, devuelve URLs y snippets
 2. read_webpage(url) — lee el contenido COMPLETO de una página web
 3. get_token_news(symbol, filter) — noticias en tiempo real de CryptoPanic para tokens cripto
+4. get_token_data(symbol) — datos de mercado en tiempo real de CoinGecko: precio, market cap, volumen 24h, ATH, exchanges
+
+## REGLA OBLIGATORIA PARA TOKENS:
+Si el usuario menciona cualquier símbolo de token con $ (como $OFC, $BTC, $RAVE), DEBES ejecutar get_token_data(symbol) Y get_token_news(symbol) ANTES de responder. Nunca respondas con precios, volumen o datos de mercado usando tu conocimiento de entrenamiento. Todo dato numérico sobre tokens DEBE venir de las herramientas. Si una herramienta devuelve error, dílo explícitamente al usuario.
 
 ## REGLA ABSOLUTA: CALIDAD DE INVESTIGACIÓN
 
@@ -213,7 +293,7 @@ REGLA FINAL: Solo caracteres latinos. Cero chino, cirílico, árabe. Escribe en 
         t_llm = time.time()
         
         try:
-            llm = get_llm(is_deep_thinking=req.is_deep_thinking).bind_tools([web_search, read_webpage, get_token_news])
+            llm = get_llm(is_deep_thinking=req.is_deep_thinking).bind_tools([web_search, read_webpage, get_token_news, get_token_data])
             res = llm.invoke(messages_dict)
             
             # Agent Loop
@@ -234,6 +314,9 @@ REGLA FINAL: Solo caracteres latinos. Cero chino, cirílico, árabe. Escribe en 
                     elif name == "get_token_news":
                         log.info(f"[Chat] get_token_news: {tool_call['args'].get('symbol')}")
                         messages_dict.append(get_token_news.invoke(tool_call))
+                    elif name == "get_token_data":
+                        log.info(f"[Chat] get_token_data: {tool_call['args'].get('symbol')}")
+                        messages_dict.append(get_token_data.invoke(tool_call))
                 
                 res = llm.invoke(messages_dict)
                 loop_i += 1
