@@ -6,6 +6,31 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from supabase_client import supabase, verify_token
 from llm_config import get_llm, get_fallback_llm
+import httpx
+import os
+from langchain_core.tools import tool
+
+@tool
+def web_search(query: str) -> str:
+    """Busca en internet información reciente, eventos actuales, noticias, o datos posteriores a tu fecha de corte."""
+    api_key = os.environ.get("SERPER_API_KEY")
+    if not api_key:
+        return "Internal Error: SERPER_API_KEY no configurada."
+    try:
+        req = httpx.post(
+            "https://google.serper.dev/search",
+            headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+            json={"q": query},
+            timeout=10.0
+        )
+        req.raise_for_status()
+        res = req.json()
+        snippets = [v["snippet"] for v in res.get("organic", [])[:4] if "snippet" in v]
+        if not snippets:
+            return "No se encontraron resultados en internet."
+        return "\n\n".join(snippets)
+    except Exception as e:
+        return f"Error en búsqueda: {str(e)}"
 
 log = logging.getLogger("openhandi")
 
@@ -71,7 +96,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         system_prompt = {
             "role": "system",
-            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Responde SIEMPRE en español coloquial, conciso y directo. Sé breve: respuestas cortas si la pregunta es corta."
+            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes la herramienta web_search para buscar en internet información en tiempo real, úsala siempre que te pregunten algo de actualidad o información que desconozcas. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Responde SIEMPRE en español coloquial, conciso y directo. Sé breve: respuestas cortas si la pregunta es corta."
         }
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
@@ -80,8 +105,22 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         t_llm = time.time()
         
         try:
-            llm = get_llm()
+            llm = get_llm().bind_tools([web_search])
             res = llm.invoke(messages_dict)
+            
+            if hasattr(res, "tool_calls") and res.tool_calls:
+                log.info(f"[Chat] El modelo llamó a las siguientes herramientas: {res.tool_calls}")
+                messages_dict.append(res)
+                
+                for tool_call in res.tool_calls:
+                    if tool_call["name"] == "web_search":
+                        log.info(f"[Chat] Buscando en internet: {tool_call['args'].get('query')}")
+                        tool_msg = web_search.invoke(tool_call)
+                        messages_dict.append(tool_msg)
+                
+                log.info("[Chat] Re-invocando el modelo con los resultados de la búsqueda...")
+                res = llm.invoke(messages_dict)
+                
         except Exception as primary_e:
             log.warning(f"[Chat] Modelo primario falló ({primary_e}), usando fallback...")
             fallback_llm = get_fallback_llm()
