@@ -22,6 +22,39 @@ def read_webpage(url: str) -> str:
         return f"Error leyendo la URL: {str(e)}"
 
 @tool
+def get_token_news(symbol: str, filter: str = "hot") -> str:
+    """Obtiene las últimas noticias y sentimiento de un token cripto específico. Úsala cuando el usuario pregunte sobre noticias, rumores o qué está pasando con un token como $OFC, $BTC, $RAVE, etc."""
+    try:
+        res = httpx.get(
+            "https://cryptopanic.com/api/v1/posts/",
+            params={
+                "auth_token": "free",
+                "currencies": symbol.upper(),
+                "kind": "news",
+                "filter": filter,
+                "public": "true"
+            },
+            timeout=10.0
+        )
+        res.raise_for_status()
+        posts = res.json().get("results", [])
+        if not posts:
+            return f"No se encontraron noticias para {symbol.upper()} en CryptoPanic."
+        items = []
+        for p in posts[:10]:
+            title = p.get("title", "")
+            source = p.get("source", {}).get("title", "")
+            url = p.get("url", "")
+            published = p.get("published_at", "")[:10]
+            votes = p.get("votes", {})
+            sentiment = f"bullish:{votes.get('positive',0)} bearish:{votes.get('negative',0)}"
+            items.append(f"[{published}] {title} | {source} | {sentiment}\nURL: {url}")
+        return "\n\n".join(items)
+    except Exception as e:
+        return f"Error consultando CryptoPanic: {str(e)}"
+
+
+@tool
 def web_search(query: str) -> str:
     """Busca en internet información reciente y devuelve resúmenes junto con sus URLs. Si necesitas el contexto completo, invoca a read_webpage con la URL pertinente."""
     api_key = os.environ.get("SERPER_API_KEY")
@@ -117,30 +150,57 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         prompt_content = f"""Eres OpenHandi, un asistente experto construido por 'El Handi'. Hoy es {current_date_str}.
 
-Tienes dos herramientas de investigación:
-1. web_search(query) — busca en Google y devuelve URLs y snippets
+Tienes tres herramientas de investigación:
+1. web_search(query) — busca en Google, devuelve URLs y snippets
 2. read_webpage(url) — lee el contenido COMPLETO de una página web
+3. get_token_news(symbol, filter) — noticias en tiempo real de CryptoPanic para tokens cripto
 
-FLUJO OBLIGATORIO para preguntas sobre noticias, escándalos, precios, personas o eventos:
-  Paso 1: Llama a web_search con la query relevante
-  Paso 2: Selecciona las 2-3 URLs más prometedoras de los resultados
-  Paso 3: Llama a read_webpage para CADA una de esas URLs
-  Paso 4: Con toda esa información extraída, redacta tu respuesta final
+## REGLA ABSOLUTA: CALIDAD DE INVESTIGACIÓN
 
-NUNCA respondas sobre noticias o eventos sin haber leído al menos un artículo completo con read_webpage."""
+Cuando el usuario pregunte algo que requiera buscar información actual, tu trabajo NO es resumir titulares. Es investigar como un periodista.
+
+### PROHIBIDO:
+- Repetir el mismo hecho con distintas palabras
+- Listar puntos que son el mismo punto disfrazado
+- Secciones vacías tipo "Cronología" que repiten lo ya dicho
+- Responder "hubo manipulación" sin explicar EL MECANISMO EXACTO
+- Secciones de "resumen" al final que repiten la intro
+- Respuestas que añaden palabras sin añadir hechos nuevos
+
+### OBLIGATORIO:
+- Haz MÚLTIPLES búsquedas con ángulos distintos:
+  * Búsqueda 1: el evento principal
+  * Búsqueda 2: los actores, wallets, empresas, nombres
+  * Búsqueda 3: números concretos, fechas exactas, magnitudes
+  * Búsqueda 4: consecuencias y estado actual
+- Usa read_webpage en 2-3 URLs para extraer el detalle completo
+- Para tokens cripto: usa también get_token_news(symbol) para coger el pulso actual
+
+### FORMATO DE RESPUESTA EXIGIDO:
+- Cifras exactas (no "subió mucho" sino "subió 11.000% en 9 días")
+- Nombres propios (no "un investigador" sino "ZachXBT")
+- Mecanismos paso a paso (no "hubo manipulación" sino el flujo completo de wallets y liquidaciones)
+- Cronología real con fechas
+- Datos on-chain o verificables cuando existan
+
+### ESTÁNDAR MÍNIMO:
+Una buena respuesta debe contestar:
+  - QUÉ pasó exactamente
+  - CÓMO pasó (mecanismo real)
+  - QUIÉNES son los actores y qué hicieron
+  - CUÁNTO (magnitudes, cifras, impacto)
+  - QUÉ pasó después y cómo está ahora
+
+Si no puedes contestar las cinco con datos concretos, busca más. No respondas hasta tenerlos todos."""
 
         if req.is_deep_thinking:
             prompt_content += """
 
-MODO DEEP THINKING: Lee 3-5 artículos. Tu respuesta DEBE usar encabezados Markdown (##), viñetas detalladas, cifras exactas, cronología de eventos y nombres de todos los implicados. Mínimo 800 palabras. Actua como periodista de investigación on-chain."""
-        else:
-            prompt_content += """
+MODO DEEP THINKING ACTIVO: Lee 3-5 artículos completos. Usa encabezados (##), viñetas, cronología real. Mínimo 800 palabras con todos los detalles extraídos."""
 
-Responde en español coloquial nativo, estructurado y bien explicado."""
-        
         prompt_content += """
 
-REGLA ABSOLUTA: Solo caracteres latinos. Cero chino, cirílico, árabe ni scripts extraños."""
+REGLA FINAL: Solo caracteres latinos. Cero chino, cirílico, árabe. Escribe en español coloquial nativo."""
 
         system_prompt = {
             "role": "system",
@@ -153,25 +213,27 @@ REGLA ABSOLUTA: Solo caracteres latinos. Cero chino, cirílico, árabe ni script
         t_llm = time.time()
         
         try:
-            llm = get_llm(is_deep_thinking=req.is_deep_thinking).bind_tools([web_search, read_webpage])
+            llm = get_llm(is_deep_thinking=req.is_deep_thinking).bind_tools([web_search, read_webpage, get_token_news])
             res = llm.invoke(messages_dict)
             
-            # Agent Loop (hasta 6 ciclos de uso de herramientas si deep thinking)
-            max_loops = 6 if req.is_deep_thinking else 3
+            # Agent Loop
+            max_loops = 6 if req.is_deep_thinking else 4
             loop_i = 0
             while hasattr(res, "tool_calls") and res.tool_calls and loop_i < max_loops:
-                log.info(f"[Chat] El modelo llamó a herramientas (ciclo {loop_i+1}): {[t['name'] for t in res.tool_calls]}")
+                log.info(f"[Chat] Herramientas ciclo {loop_i+1}: {[t['name'] for t in res.tool_calls]}")
                 messages_dict.append(res)
                 
                 for tool_call in res.tool_calls:
-                    if tool_call["name"] == "web_search":
-                        log.info(f"[Chat] Buscando en internet: {tool_call['args'].get('query')}")
-                        tool_msg = web_search.invoke(tool_call)
-                        messages_dict.append(tool_msg)
-                    elif tool_call["name"] == "read_webpage":
-                        log.info(f"[Chat] Leyendo URL: {tool_call['args'].get('url')}")
-                        tool_msg = read_webpage.invoke(tool_call)
-                        messages_dict.append(tool_msg)
+                    name = tool_call["name"]
+                    if name == "web_search":
+                        log.info(f"[Chat] web_search: {tool_call['args'].get('query')}")
+                        messages_dict.append(web_search.invoke(tool_call))
+                    elif name == "read_webpage":
+                        log.info(f"[Chat] read_webpage: {tool_call['args'].get('url')}")
+                        messages_dict.append(read_webpage.invoke(tool_call))
+                    elif name == "get_token_news":
+                        log.info(f"[Chat] get_token_news: {tool_call['args'].get('symbol')}")
+                        messages_dict.append(get_token_news.invoke(tool_call))
                 
                 res = llm.invoke(messages_dict)
                 loop_i += 1
