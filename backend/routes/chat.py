@@ -271,7 +271,15 @@ Una buena respuesta debe contestar:
   - CUÁNTO (magnitudes, cifras, impacto)
   - QUÉ pasó después y cómo está ahora
 
-Si no puedes contestar las cinco con datos concretos, busca más. No respondas hasta tenerlos todos."""
+Si no puedes contestar las cinco con datos concretos, busca más. No respondas hasta tenerlos todos.
+
+## REGLA DE ANÁLISIS (no listar, razonar):
+Cuando obtengas datos de una herramienta, NO los listes directamente. Analízalos: ¿qué significan esos números en contexto?
+- Vol/market cap >100% = actividad especulativa, posible manipulación
+- Supply circulante bajo vs total = riesgo real de dilución futura
+- Sin noticias en CryptoPanic = movimiento sin fundamento noticioso (señal de alerta)
+- ATH muy reciente + caída fuerte = posible pump and dump
+Explica siempre la implicación de cada dato, no solo el dato. Sé analítico y directo, no descriptivo."""
 
         if req.is_deep_thinking:
             prompt_content += """
