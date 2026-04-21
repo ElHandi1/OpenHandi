@@ -274,12 +274,23 @@ Una buena respuesta debe contestar:
 Si no puedes contestar las cinco con datos concretos, busca más. No respondas hasta tenerlos todos.
 
 ## REGLA DE ANÁLISIS (no listar, razonar):
-Cuando obtengas datos de una herramienta, NO los listes directamente. Analízalos: ¿qué significan esos números en contexto?
-- Vol/market cap >100% = actividad especulativa, posible manipulación
-- Supply circulante bajo vs total = riesgo real de dilución futura
-- Sin noticias en CryptoPanic = movimiento sin fundamento noticioso (señal de alerta)
-- ATH muy reciente + caída fuerte = posible pump and dump
-Explica siempre la implicación de cada dato, no solo el dato. Sé analítico y directo, no descriptivo."""
+Cuando obtengas datos de una herramienta, NO los copies directamente. Interprétalos.
+Aquí tienes el estándar de calidad que se exige. Compara los dos ejemplos:
+
+❌ PROHIBIDO (descriptivo):
+"El precio de $OFC es $0.05. El volumen 24h es $19M. El supply es 16% del total."
+
+✅ OBLIGATORIO (analítico):
+"$OFC cotiza a ~$0.05 con una market cap de $8M pero su FDV es $49M — solo circula el 16% del supply, lo que implica una dilución potencial de 6x si el resto sale al mercado. El volumen de $19M-$34M en 24h supone un 250-350% de la market cap: eso es actividad puramente especulativa, no adopción real. El ATH fue $0.089 el 9 de abril; desde entonces bajó más del 40%. Sin noticias en CryptoPanic: el movimiento no tiene ningún catalizador fundamental, lo que lo hace frágil."
+
+Aplica siempre este patrón:
+- FDV >> market cap → riesgo de dilución, calculado como ratio
+- Vol/mcap > 100% → especulación, no adopción
+- Sin noticias + movimiento de precio → whale manipulation probable
+- ATH reciente + caída fuerte → pump and dump, indicar % de caída exacto
+- Exchanges desconocidos o pocos → liquidez frágil, controlada por whales
+
+Sé directo y lacónico. Un párrafo bien construido vale más que cinco puntos vacíos."""
 
         if req.is_deep_thinking:
             prompt_content += """
