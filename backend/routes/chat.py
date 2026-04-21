@@ -11,8 +11,19 @@ import os
 from langchain_core.tools import tool
 
 @tool
+def read_webpage(url: str) -> str:
+    """Lee el contenido textual completo de una página web a partir de su URL. Úsala siempre para profundizar en noticias, escándalos o artículos que encontraste en la búsqueda web."""
+    try:
+        req = httpx.get(f"https://r.jina.ai/{url}", timeout=15.0)
+        req.raise_for_status()
+        content = req.text
+        return content[:8000] + "\n\n[Contenido truncado por longitud...]" if len(content) > 8000 else content
+    except Exception as e:
+        return f"Error leyendo la URL: {str(e)}"
+
+@tool
 def web_search(query: str) -> str:
-    """Busca en internet información reciente, eventos actuales, noticias, o datos posteriores a tu fecha de corte."""
+    """Busca en internet información reciente y devuelve resúmenes junto con sus URLs. Si necesitas el contexto completo, invoca a read_webpage con la URL pertinente."""
     api_key = os.environ.get("SERPER_API_KEY")
     if not api_key:
         return "Internal Error: SERPER_API_KEY no configurada."
@@ -28,12 +39,12 @@ def web_search(query: str) -> str:
         
         results = []
         for v in res.get("topStories", [])[:5]:
-            if "title" in v and "snippet" in v:
-                results.append(f"[Noticia] {v['title']}: {v['snippet']}")
+            if "title" in v and "link" in v:
+                results.append(f"[Noticia] {v['title']}\nURL: {v['link']}\n{v.get('snippet', '')}")
                 
         for v in res.get("organic", [])[:10]:
-            if "title" in v and "snippet" in v:
-                results.append(f"[Web] {v['title']}: {v['snippet']}")
+            if "title" in v and "link" in v:
+                results.append(f"[Web] {v['title']}\nURL: {v['link']}\n{v.get('snippet', '')}")
                 
         if not results:
             return "No se encontraron resultados en internet."
@@ -105,7 +116,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         system_prompt = {
             "role": "system",
-            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes la herramienta web_search para buscar en internet; úsala exhaustivamente, puedes investigar muy a fondo si el tema lo requiere como un auténtico hacker u OSINT. Si el usuario pregunta por controversias, escándalos, investigaciones o noticias, trae el chisme completo: detalles, cifras exactas, personas involucradas (actores de la industria, investigadores como ZachXBT), fechas y contextos. NO seas perezoso. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Escribe en español coloquial nativo, siendo analítico y aportando mucho valor en profundidad."
+            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes las herramientas web_search y read_webpage. Úsalas en cadena para investigar (busca, luego lee el artículo completo de la URL que te interese). Cuando el usuario pregunte por controversias, escándalos o noticias complejas de 2024 a la actualidad, DEBES entregar un informe exhaustivo: usa títulos en Markdown (##), viñetas, desgrana el contexto previo, cifras del mercado, la cronología de eventos y nombra a los implicados (ej. ZachXBT). NO seas resumido ni perezoso, toma todo el espacio necesario (hasta 2000 palabras) para una respuesta digna de un periodista OSINT. Escribe en español coloquial nativo. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres latinos. Cero chino."
         }
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
@@ -114,11 +125,13 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         t_llm = time.time()
         
         try:
-            llm = get_llm().bind_tools([web_search])
+            llm = get_llm().bind_tools([web_search, read_webpage])
             res = llm.invoke(messages_dict)
             
-            if hasattr(res, "tool_calls") and res.tool_calls:
-                log.info(f"[Chat] El modelo llamó a las siguientes herramientas: {res.tool_calls}")
+            # Agent Loop (hasta 3 ciclos de uso de herramientas)
+            loop_i = 0
+            while hasattr(res, "tool_calls") and res.tool_calls and loop_i < 3:
+                log.info(f"[Chat] El modelo llamó a herramientas (ciclo {loop_i+1}): {[t['name'] for t in res.tool_calls]}")
                 messages_dict.append(res)
                 
                 for tool_call in res.tool_calls:
@@ -126,9 +139,13 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                         log.info(f"[Chat] Buscando en internet: {tool_call['args'].get('query')}")
                         tool_msg = web_search.invoke(tool_call)
                         messages_dict.append(tool_msg)
+                    elif tool_call["name"] == "read_webpage":
+                        log.info(f"[Chat] Leyendo URL: {tool_call['args'].get('url')}")
+                        tool_msg = read_webpage.invoke(tool_call)
+                        messages_dict.append(tool_msg)
                 
-                log.info("[Chat] Re-invocando el modelo con los resultados de la búsqueda...")
                 res = llm.invoke(messages_dict)
+                loop_i += 1
                 
         except Exception as primary_e:
             log.warning(f"[Chat] Modelo primario falló ({primary_e}), usando fallback...")

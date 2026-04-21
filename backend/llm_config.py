@@ -22,7 +22,7 @@ def _llm(model: str, max_tokens: int = 1024, timeout: int = 30, temperature: flo
 
 # Chat Oracle — rapido, en USA
 def get_llm():
-    return _llm("meta/llama-3.3-70b-instruct", timeout=30)
+    return _llm("meta/llama-3.3-70b-instruct", max_tokens=2048, timeout=45)
 
 def get_fallback_llm():
     return _llm("minimaxai/minimax-m2.7", timeout=45)
