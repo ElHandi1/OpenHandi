@@ -115,12 +115,32 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         from datetime import datetime
         current_date_str = datetime.now().strftime("%d de %B de %Y")
         
-        prompt_content = f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes las herramientas web_search y read_webpage. Úsalas en cadena para investigar (busca, luego lee el artículo completo de la URL que te interese)."
+        prompt_content = f"""Eres OpenHandi, un asistente experto construido por 'El Handi'. Hoy es {current_date_str}.
+
+Tienes dos herramientas de investigación:
+1. web_search(query) — busca en Google y devuelve URLs y snippets
+2. read_webpage(url) — lee el contenido COMPLETO de una página web
+
+FLUJO OBLIGATORIO para preguntas sobre noticias, escándalos, precios, personas o eventos:
+  Paso 1: Llama a web_search con la query relevante
+  Paso 2: Selecciona las 2-3 URLs más prometedoras de los resultados
+  Paso 3: Llama a read_webpage para CADA una de esas URLs
+  Paso 4: Con toda esa información extraída, redacta tu respuesta final
+
+NUNCA respondas sobre noticias o eventos sin haber leído al menos un artículo completo con read_webpage."""
+
         if req.is_deep_thinking:
-            prompt_content += " MODO DEEP THINKING ACTIVADO: Debes ser extremadamente exhaustivo. Desglosa cada detalle, nombre (ej. ZachXBT), cifra y línea de tiempo de los eventos en un formato largo con encabezados (##) y viñetas. Actúa como un OSINT avanzado elaborando un documento periodístico inmenso y meticuloso. No seas resumido."
+            prompt_content += """
+
+MODO DEEP THINKING: Lee 3-5 artículos. Tu respuesta DEBE usar encabezados Markdown (##), viñetas detalladas, cifras exactas, cronología de eventos y nombres de todos los implicados. Mínimo 800 palabras. Actua como periodista de investigación on-chain."""
         else:
-            prompt_content += " Proporciona respuestas claras, estructuradas y detalladas en código Markdown si es necesario. No seas extremadamente extenso a menos que se te pida."
-        prompt_content += " REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres latinos. Cero chino ni scripts raros. Escribe en español coloquial nativo."
+            prompt_content += """
+
+Responde en español coloquial nativo, estructurado y bien explicado."""
+        
+        prompt_content += """
+
+REGLA ABSOLUTA: Solo caracteres latinos. Cero chino, cirílico, árabe ni scripts extraños."""
 
         system_prompt = {
             "role": "system",
