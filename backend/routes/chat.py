@@ -25,10 +25,19 @@ def web_search(query: str) -> str:
         )
         req.raise_for_status()
         res = req.json()
-        snippets = [v["snippet"] for v in res.get("organic", [])[:4] if "snippet" in v]
-        if not snippets:
+        
+        results = []
+        for v in res.get("topStories", [])[:5]:
+            if "title" in v and "snippet" in v:
+                results.append(f"[Noticia] {v['title']}: {v['snippet']}")
+                
+        for v in res.get("organic", [])[:10]:
+            if "title" in v and "snippet" in v:
+                results.append(f"[Web] {v['title']}: {v['snippet']}")
+                
+        if not results:
             return "No se encontraron resultados en internet."
-        return "\n\n".join(snippets)
+        return "\n\n".join(results)
     except Exception as e:
         return f"Error en búsqueda: {str(e)}"
 
@@ -96,7 +105,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         
         system_prompt = {
             "role": "system",
-            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes la herramienta web_search para buscar en internet información en tiempo real, úsala siempre que te pregunten algo de actualidad o información que desconozcas. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Responde SIEMPRE en español coloquial, conciso y directo. Sé breve: respuestas cortas si la pregunta es corta."
+            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes la herramienta web_search para buscar en internet; úsala exhaustivamente, puedes investigar muy a fondo si el tema lo requiere como un auténtico hacker u OSINT. Si el usuario pregunta por controversias, escándalos, investigaciones o noticias, trae el chisme completo: detalles, cifras exactas, personas involucradas (actores de la industria, investigadores como ZachXBT), fechas y contextos. NO seas perezoso. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres del alfabeto latino español. PROHIBIDO TOTALMENTE: chino, japonés, coreano, ruso, cirílico, árabe, o cualquier script no-latino. Escribe en español coloquial nativo, siendo analítico y aportando mucho valor en profundidad."
         }
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
