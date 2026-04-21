@@ -15,44 +15,32 @@ function App() {
   
   const logoImgRef = useRef(null);
   const sidebarRef = useRef(null);
-  const tlRef = useRef(null);
-  const isFirstRender = useRef(true);
+  const ctxRef = useRef(null);
   const collapseIconRef = useRef(null);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   // GSAP Sidebar Expand/Collapse Animation
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      tlRef.current = gsap.timeline({ paused: true })
-        .fromTo('.sidebar-label', 
-          { opacity: 1 }, 
-          { opacity: 0, duration: 0.15, ease: 'power1.out' }
-        )
-        .fromTo(sidebarRef.current, 
-          { width: 240 }, 
-          { width: 56, duration: 0.25, ease: 'power2.inOut' }, 
-          ">"
-        );
-
-      if (isCollapsed) {
-        tlRef.current.progress(1);
-      }
-    }, sidebarRef);
-
-    return () => ctx.revert();
-  }, []); // Run once on mount
+    ctxRef.current = gsap.context(() => {}, sidebarRef);
+    return () => ctxRef.current.revert();
+  }, []);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    if (isCollapsed) {
-      tlRef.current.play();
-    } else {
-      tlRef.current.reverse();
-    }
+    if (!ctxRef.current) return;
+    
+    ctxRef.current.add(() => {
+      // Small timeout ensures React has finished swapping DOM elements (like icons) before GSAP targets them
+      requestAnimationFrame(() => {
+        if (isCollapsed) {
+          gsap.to('.sidebar-label', { opacity: 0, duration: 0.15, ease: 'power1.inOut', overwrite: 'auto' });
+          gsap.to(sidebarRef.current, { width: 56, duration: 0.25, delay: 0.15, ease: 'power2.inOut', overwrite: 'auto' });
+        } else {
+          gsap.to(sidebarRef.current, { width: 240, duration: 0.25, ease: 'power2.inOut', overwrite: 'auto' });
+          gsap.to('.sidebar-label', { opacity: 1, duration: 0.15, delay: 0.25, ease: 'power1.inOut', overwrite: 'auto' });
+        }
+      });
+    });
   }, [isCollapsed]);
 
   useEffect(() => {
