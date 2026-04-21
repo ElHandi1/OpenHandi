@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Bot, Loader2, Plus, MessageSquare, Trash2 } from 'lucide-react';
+import { Send, Bot, Loader2, Plus, MessageSquare, Trash2, Brain } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -12,6 +12,7 @@ export default function ChatView() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeepThinking, setIsDeepThinking] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const textareaRef = useRef(null);
@@ -97,7 +98,7 @@ export default function ChatView() {
       const res = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-assistant-token': token },
-        body: JSON.stringify({ message: userMessage, session_id: activeSessionId })
+        body: JSON.stringify({ message: userMessage, session_id: activeSessionId, is_deep_thinking: isDeepThinking })
       });
       if (res.ok) {
         const data = await res.json();
@@ -322,6 +323,18 @@ export default function ChatView() {
                   caretColor: 'var(--accent)',
                 }}
               />
+              <button
+                onClick={() => setIsDeepThinking(!isDeepThinking)}
+                title="Deep Thinking Mode"
+                className="flex items-center justify-center w-8 h-8 rounded-xl shrink-0 transition-all duration-150 active:scale-95"
+                style={{
+                  background: isDeepThinking ? 'var(--accent-subtle)' : 'transparent',
+                  color: isDeepThinking ? 'var(--accent)' : 'var(--text-muted)',
+                  border: isDeepThinking ? '1px solid var(--accent-border)' : '1px solid transparent',
+                }}
+              >
+                <Brain className="w-4 h-4" />
+              </button>
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !input.trim()}

@@ -21,7 +21,9 @@ def _llm(model: str, max_tokens: int = 1024, timeout: int = 30, temperature: flo
     )
 
 # Chat Oracle — rapido, en USA
-def get_llm():
+def get_llm(is_deep_thinking: bool = False):
+    if is_deep_thinking:
+        return _llm("meta/llama-3.3-70b-instruct", max_tokens=4096, timeout=120)
     return _llm("meta/llama-3.3-70b-instruct", max_tokens=2048, timeout=45)
 
 def get_fallback_llm():

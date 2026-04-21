@@ -60,6 +60,7 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    is_deep_thinking: Optional[bool] = False
 
 @router.get("/verify")
 def verify_access(token: str = Depends(verify_token)):
@@ -114,23 +115,31 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
         from datetime import datetime
         current_date_str = datetime.now().strftime("%d de %B de %Y")
         
+        prompt_content = f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes las herramientas web_search y read_webpage. Úsalas en cadena para investigar (busca, luego lee el artículo completo de la URL que te interese)."
+        if req.is_deep_thinking:
+            prompt_content += " MODO DEEP THINKING ACTIVADO: Debes ser extremadamente exhaustivo. Desglosa cada detalle, nombre (ej. ZachXBT), cifra y línea de tiempo de los eventos en un formato largo con encabezados (##) y viñetas. Actúa como un OSINT avanzado elaborando un documento periodístico inmenso y meticuloso. No seas resumido."
+        else:
+            prompt_content += " Proporciona respuestas claras, estructuradas y detalladas en código Markdown si es necesario. No seas extremadamente extenso a menos que se te pida."
+        prompt_content += " REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres latinos. Cero chino ni scripts raros. Escribe en español coloquial nativo."
+
         system_prompt = {
             "role": "system",
-            "content": f"Eres OpenHandi, un asistente experto y sarcástico construido por 'El Handi'. Hoy es literalmente {current_date_str}. Tienes las herramientas web_search y read_webpage. Úsalas en cadena para investigar (busca, luego lee el artículo completo de la URL que te interese). Cuando el usuario pregunte por controversias, escándalos o noticias complejas de 2024 a la actualidad, DEBES entregar un informe exhaustivo: usa títulos en Markdown (##), viñetas, desgrana el contexto previo, cifras del mercado, la cronología de eventos y nombra a los implicados (ej. ZachXBT). NO seas resumido ni perezoso, toma todo el espacio necesario (hasta 2000 palabras) para una respuesta digna de un periodista OSINT. Escribe en español coloquial nativo. REGLA ABSOLUTA: Usa ÚNICAMENTE caracteres latinos. Cero chino."
+            "content": prompt_content
         }
         
         messages_dict = [system_prompt] + [{"role": m["role"], "content": m["content"]} for m in history_res.data]
         
-        log.info(f"[Chat] Llamando al LLM con {len(messages_dict)} mensajes en contexto...")
+        log.info(f"[Chat] Llamando al LLM con {len(messages_dict)} mensajes en contexto. DeepThinking={req.is_deep_thinking}")
         t_llm = time.time()
         
         try:
-            llm = get_llm().bind_tools([web_search, read_webpage])
+            llm = get_llm(is_deep_thinking=req.is_deep_thinking).bind_tools([web_search, read_webpage])
             res = llm.invoke(messages_dict)
             
-            # Agent Loop (hasta 3 ciclos de uso de herramientas)
+            # Agent Loop (hasta 6 ciclos de uso de herramientas si deep thinking)
+            max_loops = 6 if req.is_deep_thinking else 3
             loop_i = 0
-            while hasattr(res, "tool_calls") and res.tool_calls and loop_i < 3:
+            while hasattr(res, "tool_calls") and res.tool_calls and loop_i < max_loops:
                 log.info(f"[Chat] El modelo llamó a herramientas (ciclo {loop_i+1}): {[t['name'] for t in res.tool_calls]}")
                 messages_dict.append(res)
                 
