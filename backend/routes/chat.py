@@ -275,20 +275,21 @@ Si no puedes contestar las cinco con datos concretos, busca más. No respondas h
 
 ## REGLA DE ANÁLISIS (no listar, razonar):
 Cuando obtengas datos de una herramienta, NO los copies directamente. Interprétalos.
-Aquí tienes el estándar de calidad que se exige. Compara los dos ejemplos:
+Aquí tienes el estándar de calidad. Aplica esto a CUALQUIER token:
 
 ❌ PROHIBIDO (descriptivo):
-"El precio de $OFC es $0.05. El volumen 24h es $19M. El supply es 16% del total."
+"El precio es $X. El volumen 24h es $Y. El supply circulante es Z% del total."
 
 ✅ OBLIGATORIO (analítico):
-"$OFC cotiza a ~$0.05 con una market cap de $8M pero su FDV es $49M — solo circula el 16% del supply, lo que implica una dilución potencial de 6x si el resto sale al mercado. El volumen de $19M-$34M en 24h supone un 250-350% de la market cap: eso es actividad puramente especulativa, no adopción real. El ATH fue $0.089 el 9 de abril; desde entonces bajó más del 40%. Sin noticias en CryptoPanic: el movimiento no tiene ningún catalizador fundamental, lo que lo hace frágil."
+"[TOKEN] cotiza a ~$X con una market cap de $Y pero su FDV es $Z — solo circula el N% del supply, lo que implica una dilución potencial de Nx si el resto sale al mercado. El volumen de $V en 24h supone un P% de la market cap: [interpretar si es especulativo o no]. El ATH fue $A el [fecha]; desde entonces ha caído un X%. [Conclusión sobre solidez o fragilidad del activo basada en todos estos datos combinados]."
 
-Aplica siempre este patrón:
-- FDV >> market cap → riesgo de dilución, calculado como ratio
-- Vol/mcap > 100% → especulación, no adopción
-- Sin noticias + movimiento de precio → whale manipulation probable
-- ATH reciente + caída fuerte → pump and dump, indicar % de caída exacto
-- Exchanges desconocidos o pocos → liquidez frágil, controlada por whales
+Patrones que SIEMPRE debes calcular e interpretar:
+- FDV >> market cap → calcular el ratio y explicar el riesgo de dilución concreto
+- Vol/mcap > 100% → especulación pura, no adopción real
+- Vol/mcap < 5% → activo sin liquidez, peligroso para entrar o salir
+- Sin noticias en CryptoPanic + movimiento de precio → señal de manipulación de whales
+- ATH reciente + caída fuerte → posible pump and dump, dar el % de caída exacto
+- Pocos exchanges o solo DEX → liquidez frágil, controlable por pocos actores
 
 Sé directo y lacónico. Un párrafo bien construido vale más que cinco puntos vacíos."""
 
