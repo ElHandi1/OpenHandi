@@ -120,16 +120,23 @@ def get_technical_analysis(coin_id: str) -> str:
     """Obtiene datos OHLCV de 90 dias de CoinGecko y calcula todos los indicadores tecnicos: RSI, EMAs, MACD, Bollinger, Stochastic, ADX, OBV, Fibonacci, volatilidad. coin_id es el ID de CoinGecko (ej: 'bitcoin', 'solana', 'hedera-hashgraph')."""
     try:
         # Fetch OHLCV
-        ohlcv_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
-        ohlcv_res = fetch_coingecko(ohlcv_url, {"vs_currency": "usd", "days": "90"})
-        if ohlcv_res["error"]:
-            return f"Error obteniendo OHLCV: {ohlcv_res['error']}"
+        ohlcv_200_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+        ohlcv_200_res = fetch_coingecko(ohlcv_200_url, {"vs_currency": "usd", "days": "200"})
+        ohlcv_90_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+        ohlcv_90_res = fetch_coingecko(ohlcv_90_url, {"vs_currency": "usd", "days": "90"})
+        
+        if ohlcv_200_res["error"] or ohlcv_90_res["error"]:
+            return f"Error obteniendo OHLCV: {ohlcv_90_res['error'] or ohlcv_200_res['error']}"
             
-        raw = ohlcv_res["data"]
-        if not raw or len(raw) < 20:
+        raw_200 = ohlcv_200_res["data"]
+        raw_90 = ohlcv_90_res["data"]
+        if not raw_90 or len(raw_90) < 20:
             return f"Datos OHLCV insuficientes para {coin_id}."
 
-        df = pd.DataFrame(raw, columns=["timestamp", "open", "high", "low", "close"])
+        df_200 = pd.DataFrame(raw_200, columns=["timestamp", "open", "high", "low", "close"])
+        df_200["timestamp"] = pd.to_datetime(df_200["timestamp"], unit="ms")
+        
+        df = pd.DataFrame(raw_90, columns=["timestamp", "open", "high", "low", "close"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
         # Fetch volume separately from market_chart
@@ -156,12 +163,19 @@ def get_technical_analysis(coin_id: str) -> str:
             lines.append(f"RSI(14): {rsi_val:.1f} — {interp}")
 
         # EMAs
-        for p in [9, 21, 50, 200]:
+        for p in [9, 21, 50]:
             ema_s = ta.ema(df["close"], length=p)
             if ema_s is not None and len(ema_s) > 0:
                 val = ema_s.iloc[-1]
                 pos = "ARRIBA" if last["close"] > val else "ABAJO"
                 lines.append(f"EMA{p}: ${val:.6f} (precio {pos})")
+                
+        ema_200_s = ta.ema(df_200["close"], length=200)
+        if ema_200_s is not None and len(ema_200_s) > 0:
+            val_200 = ema_200_s.iloc[-1]
+            pos_200 = "ARRIBA" if last["close"] > val_200 else "ABAJO"
+            reliable = "Fiable" if len(df_200) >= 200 else "Poco fiable (pocos datos)"
+            lines.append(f"EMA200: ${val_200:.6f} (precio {pos_200}) [{reliable}]")
 
         # MACD
         macd_df = ta.macd(df["close"])
