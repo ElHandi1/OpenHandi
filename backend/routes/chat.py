@@ -98,22 +98,27 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                 
                 # Buscar tool calls manuales (DeepSeek V3.2 suele hacer esto en NIM)
                 fake_calls = []
+                # Formato 1: [TOOL_CALL] {tool => "...", args => {...}} [/TOOL_CALL]
                 matches = re.finditer(r'\[TOOL_CALL\]\s*\{tool\s*=>\s*"([^"]+)",\s*args\s*=>\s*\{(.*?)\}\}\s*\[/TOOL_CALL\]', content, re.DOTALL)
                 for i, m in enumerate(matches):
                     t_name = m.group(1)
                     t_args_str = m.group(2)
-                    
-                    # Parsear los argumentos --key "value"
                     args_dict = {}
                     arg_matches = re.finditer(r'--(\w+)\s+"([^"]+)"', t_args_str)
                     for am in arg_matches:
                         args_dict[am.group(1)] = am.group(2)
-                        
-                    fake_calls.append({
-                        "name": t_name,
-                        "args": args_dict,
-                        "id": f"call_fake_{loop_i}_{i}"
-                    })
+                    fake_calls.append({"name": t_name, "args": args_dict, "id": f"call_fake_{loop_i}_{len(fake_calls)}"})
+
+                # Formato 2: <tool_call> {"name": "...", "parameters": {...}} </tool_call> (o sin tags)
+                import json
+                json_matches = re.finditer(r'\{\s*"name"\s*:\s*"([^"]+)",\s*"parameters"\s*:\s*(\{.*?\})\s*\}', content)
+                for m in json_matches:
+                    t_name = m.group(1)
+                    try:
+                        t_args = json.loads(m.group(2))
+                        fake_calls.append({"name": t_name, "args": t_args, "id": f"call_fake_json_{loop_i}_{len(fake_calls)}"})
+                    except:
+                        pass
 
                 all_calls = native_calls + fake_calls
                 
