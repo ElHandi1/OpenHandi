@@ -125,6 +125,16 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                 if not all_calls:
                     break
 
+                if fake_calls:
+                    # LangChain y OpenAI fallan si hay un ToolMessage sin un AIMessage previo con tool_calls reales.
+                    # Reconstruimos el AIMessage inyectando los tool_calls falsos como reales.
+                    from langchain_core.messages import AIMessage
+                    res = AIMessage(
+                        content=res.content,
+                        tool_calls=all_calls,
+                        id=res.id if hasattr(res, "id") else None
+                    )
+
                 tool_names = [t["name"] for t in all_calls]
                 log.info(f"[Chat] Loop {loop_i+1}/{max_loops}: {tool_names} (Nativos: {len(native_calls)}, Fake: {len(fake_calls)})")
                 messages_dict.append(res)
@@ -135,13 +145,9 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                     if tool_fn:
                         log.info(f"[Chat] -> {name}({tc['args']})")
                         try:
-                            if "id" in tc and tc["id"].startswith("call_fake_"):
-                                # Fake tool call -> pasamos dict y creamos ToolMessage manual
-                                ans = tool_fn.invoke(tc["args"])
-                                messages_dict.append(ToolMessage(content=str(ans), tool_call_id=tc["id"], name=name))
-                            else:
-                                # Native tool call
-                                messages_dict.append(tool_fn.invoke(tc))
+                            # Ahora pasamos el dict a invoke() y creamos ToolMessage con el tool_call_id correcto
+                            ans = tool_fn.invoke(tc["args"])
+                            messages_dict.append(ToolMessage(content=str(ans), tool_call_id=tc.get("id"), name=name))
                         except Exception as e:
                             log.error(f"[Chat] Error en tool {name}: {e}")
                             err_msg = ToolMessage(content=f"Error: {str(e)}", tool_call_id=tc.get("id", "unknown"), name=name)
