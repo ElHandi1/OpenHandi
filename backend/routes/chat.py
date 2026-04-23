@@ -116,21 +116,33 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                         args_dict[k] = v
                     fake_calls.append({"name": t_name, "args": args_dict, "id": f"call_fake_{loop_i}_{len(fake_calls)}"})
 
-                # Formato 2: JSON puro suelto {"name": "...", "parameters": {...}} o {"tool": "...", "args": {...}}
+                # Formato 2: JSON puro usando contador de llaves para soportar anidamiento
                 import json
-                json_matches = re.finditer(r'\{\s*(?:"name"|"tool")\s*:\s*"([^"]+)"\s*,\s*(?:"parameters"|"args")\s*:\s*(\{.*?\})\s*\}', content)
-                for m in json_matches:
-                    t_name = m.group(1)
-                    try:
-                        t_args = json.loads(m.group(2))
-                        if t_name == "coingecko_api":
-                            if "method" in t_args: t_args["endpoint"] = t_args.pop("method")
-                            if "query" in t_args:
-                                q_val = t_args.pop("query")
-                                t_args["params"] = f"query={q_val}" if "=" not in q_val else q_val
-                        fake_calls.append({"name": t_name, "args": t_args, "id": f"call_fake_json_{loop_i}_{len(fake_calls)}"})
-                    except:
-                        pass
+                # Busca cualquier { que contenga "name" o "tool" como primera key
+                json_starts = re.finditer(r'\{(?=\s*"(?:name|tool)")', content)
+                for match in json_starts:
+                    start = match.start()
+                    depth = 0
+                    for i, char in enumerate(content[start:]):
+                        if char == '{': depth += 1
+                        elif char == '}': depth -= 1
+                        if depth == 0:
+                            candidate = content[start:start + i + 1]
+                            try:
+                                parsed = json.loads(candidate)
+                                t_name = parsed.get("name") or parsed.get("tool")
+                                t_args = parsed.get("parameters") or parsed.get("args") or parsed.get("arguments", {})
+                                
+                                if t_name:
+                                    if t_name == "coingecko_api":
+                                        if "method" in t_args: t_args["endpoint"] = t_args.pop("method")
+                                        if "query" in t_args and "params" not in t_args:
+                                            q_val = t_args.pop("query")
+                                            t_args["params"] = f"query={q_val}" if "=" not in q_val else q_val
+                                    fake_calls.append({"name": t_name, "args": t_args, "id": f"call_fake_json_{loop_i}_{len(fake_calls)}"})
+                            except Exception:
+                                pass
+                            break
 
                 # Formato 3: Minimax XML <invoke name="web_search"> <parameter name="query">...</parameter> </invoke>
                 minimax_matches = re.finditer(r'<invoke\s+name="([^"]+)">\s*(.*?)\s*</invoke>', content, re.DOTALL)
