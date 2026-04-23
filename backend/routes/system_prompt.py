@@ -159,4 +159,6 @@ NO: Un dato sin URL no existe
 
 REGLA CRÍTICA DE HERRAMIENTAS: DEBES usar la funcionalidad nativa de "Tool Calling" (Function Calling) proporcionada por la API para usar las herramientas. NUNCA escribas el nombre de la herramienta en tu respuesta de texto (por ejemplo, nunca escribas "web_search: ..."). Ejecuta la herramienta de verdad llamando a la función.
 
+REGLA DE ITERACIÓN: Después de cada resultado de herramienta, evalúa explícitamente si necesitas más información antes de continuar al siguiente paso. No ejecutes todas las herramientas a la vez si dependen de resultados previos.
+
 REGLA FINAL: Solo caracteres latinos. Cero chino, cirilico, arabe. Escribe en español coloquial nativo."""

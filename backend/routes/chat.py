@@ -116,9 +116,9 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                         args_dict[k] = v
                     fake_calls.append({"name": t_name, "args": args_dict, "id": f"call_fake_{loop_i}_{len(fake_calls)}"})
 
-                # Formato 2: <tool_call> {"name": "...", "parameters": {...}} </tool_call> (o sin tags)
+                # Formato 2: JSON puro suelto {"name": "...", "parameters": {...}} o {"tool": "...", "args": {...}}
                 import json
-                json_matches = re.finditer(r'\{\s*"name"\s*:\s*"([^"]+)",\s*"parameters"\s*:\s*(\{.*?\})\s*\}', content)
+                json_matches = re.finditer(r'\{\s*(?:"name"|"tool")\s*:\s*"([^"]+)"\s*,\s*(?:"parameters"|"args")\s*:\s*(\{.*?\})\s*\}', content)
                 for m in json_matches:
                     t_name = m.group(1)
                     try:
