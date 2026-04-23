@@ -124,14 +124,31 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                     try:
                         t_args = json.loads(m.group(2))
                         if t_name == "coingecko_api":
-                            if "method" in t_args:
-                                t_args["endpoint"] = t_args.pop("method")
+                            if "method" in t_args: t_args["endpoint"] = t_args.pop("method")
                             if "query" in t_args:
                                 q_val = t_args.pop("query")
                                 t_args["params"] = f"query={q_val}" if "=" not in q_val else q_val
                         fake_calls.append({"name": t_name, "args": t_args, "id": f"call_fake_json_{loop_i}_{len(fake_calls)}"})
                     except:
                         pass
+
+                # Formato 3: Minimax XML <invoke name="web_search"> <parameter name="query">...</parameter> </invoke>
+                minimax_matches = re.finditer(r'<invoke\s+name="([^"]+)">\s*(.*?)\s*</invoke>', content, re.DOTALL)
+                for m in minimax_matches:
+                    t_name = m.group(1)
+                    params_str = m.group(2)
+                    args_dict = {}
+                    param_matches = re.finditer(r'<parameter\s+name="([^"]+)">(.*?)</parameter>', params_str, re.DOTALL)
+                    for pm in param_matches:
+                        args_dict[pm.group(1)] = pm.group(2)
+                        
+                    if t_name == "coingecko_api":
+                        if "method" in args_dict: args_dict["endpoint"] = args_dict.pop("method")
+                        if "query" in args_dict and "params" not in args_dict:
+                            q_val = args_dict.pop("query")
+                            args_dict["params"] = f"query={q_val}" if "=" not in q_val else q_val
+                            
+                    fake_calls.append({"name": t_name, "args": args_dict, "id": f"call_fake_mmx_{loop_i}_{len(fake_calls)}"})
 
                 all_calls = native_calls + fake_calls
                 
