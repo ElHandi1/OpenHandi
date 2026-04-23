@@ -130,8 +130,8 @@ def get_technical_analysis(coin_id: str) -> str:
             
         raw_200 = ohlcv_200_res["data"]
         raw_90 = ohlcv_90_res["data"]
-        if not raw_90 or len(raw_90) < 20:
-            return f"Datos OHLCV insuficientes para {coin_id}."
+        if not raw_90 or len(raw_90) < 30:
+            return f"Datos OHLCV insuficientes para {coin_id} (menos de 30 días de histórico). El análisis técnico no es aplicable todavía. Salta la Fase 2 y procede directamente con la Fase 3 (Análisis Fundamental) y Fase 4 (Sentimiento)."
 
         df_200 = pd.DataFrame(raw_200, columns=["timestamp", "open", "high", "low", "close"])
         df_200["timestamp"] = pd.to_datetime(df_200["timestamp"], unit="ms")
