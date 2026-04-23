@@ -118,8 +118,17 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
 
                 # Formato 2: JSON puro usando contador de llaves para soportar anidamiento
                 import json
-                # Busca cualquier { que contenga "name" o "tool" como primera key
-                json_starts = re.finditer(r'\{(?=\s*"(?:name|tool)")', content)
+                import re
+
+                def sanitize_llm_json(raw: str) -> str:
+                    raw = re.sub(r'\s*=>\s*', ':', raw)
+                    raw = re.sub(r'"--([^"]+)"', r'"\1"', raw)
+                    raw = re.sub(r"'([^']*)'", r'"\1"', raw)
+                    raw = re.sub(r'([{,]\s*)([a-zA-Z0-9_]+)(\s*:)', r'\1"\2"\3', raw)
+                    return raw
+
+                # Busca { seguido de name, "name", tool o "tool" con o sin comillas, y : o =>
+                json_starts = re.finditer(r'\{(?=\s*"?(?:name|tool)"?\s*(?::|=>))', content)
                 for match in json_starts:
                     start = match.start()
                     depth = 0
@@ -128,6 +137,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                         elif char == '}': depth -= 1
                         if depth == 0:
                             candidate = content[start:start + i + 1]
+                            candidate = sanitize_llm_json(candidate)
                             try:
                                 parsed = json.loads(candidate)
                                 t_name = parsed.get("name") or parsed.get("tool")
