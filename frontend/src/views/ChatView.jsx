@@ -304,7 +304,35 @@ export default function ChatView() {
           className="shrink-0 px-6 py-4"
           style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-base)' }}
         >
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-3xl mx-auto flex flex-col gap-3">
+            {isDeepThinking && (
+              <div className="flex flex-wrap gap-2 px-1 animate-fade-in">
+                <span className="text-xs font-medium flex items-center mr-2" style={{ color: 'var(--text-muted)' }}>
+                  Forzar modo (opcional):
+                </span>
+                <button
+                  onClick={() => { setInput(prev => { const val = prev.replace(/\[MODO.*?\]\s*/g, ''); return `[MODO TOKEN] ${val}`; }); textareaRef.current?.focus(); }}
+                  className="text-xs px-3 py-1.5 rounded-full transition-colors"
+                  style={{ background: input.includes('[MODO TOKEN]') ? 'var(--accent-subtle)' : 'var(--bg-surface)', color: input.includes('[MODO TOKEN]') ? 'var(--accent)' : 'var(--text-secondary)', border: `1px solid ${input.includes('[MODO TOKEN]') ? 'var(--accent-border)' : 'var(--border)'}` }}
+                >
+                  🪙 Token
+                </button>
+                <button
+                  onClick={() => { setInput(prev => { const val = prev.replace(/\[MODO.*?\]\s*/g, ''); return `[MODO HACKATHON] ${val}`; }); textareaRef.current?.focus(); }}
+                  className="text-xs px-3 py-1.5 rounded-full transition-colors"
+                  style={{ background: input.includes('[MODO HACKATHON]') ? 'var(--accent-subtle)' : 'var(--bg-surface)', color: input.includes('[MODO HACKATHON]') ? 'var(--accent)' : 'var(--text-secondary)', border: `1px solid ${input.includes('[MODO HACKATHON]') ? 'var(--accent-border)' : 'var(--border)'}` }}
+                >
+                  🏆 Hackathon
+                </button>
+                <button
+                  onClick={() => { setInput(prev => { const val = prev.replace(/\[MODO.*?\]\s*/g, ''); return `[MODO COMUNIDAD] ${val}`; }); textareaRef.current?.focus(); }}
+                  className="text-xs px-3 py-1.5 rounded-full transition-colors"
+                  style={{ background: input.includes('[MODO COMUNIDAD]') ? 'var(--accent-subtle)' : 'var(--bg-surface)', color: input.includes('[MODO COMUNIDAD]') ? 'var(--accent)' : 'var(--text-secondary)', border: `1px solid ${input.includes('[MODO COMUNIDAD]') ? 'var(--accent-border)' : 'var(--border)'}` }}
+                >
+                  👥 Comunidad
+                </button>
+              </div>
+            )}
             <div className="gb-input flex items-center gap-3 p-3 rounded-2xl">
               <textarea
                 ref={textareaRef}
