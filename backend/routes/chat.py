@@ -106,7 +106,14 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                     args_dict = {}
                     arg_matches = re.finditer(r'--(\w+)\s+"([^"]+)"', t_args_str)
                     for am in arg_matches:
-                        args_dict[am.group(1)] = am.group(2)
+                        k = am.group(1)
+                        v = am.group(2)
+                        # Parches de auto-corrección para alucinaciones comunes de DeepSeek
+                        if t_name == "coingecko_api":
+                            if k == "method": k = "endpoint"
+                            if k == "query" and "params" not in args_dict: k = "params"
+                            if k == "params" and v and "=" not in v: v = f"query={v}"
+                        args_dict[k] = v
                     fake_calls.append({"name": t_name, "args": args_dict, "id": f"call_fake_{loop_i}_{len(fake_calls)}"})
 
                 # Formato 2: <tool_call> {"name": "...", "parameters": {...}} </tool_call> (o sin tags)
@@ -116,6 +123,12 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                     t_name = m.group(1)
                     try:
                         t_args = json.loads(m.group(2))
+                        if t_name == "coingecko_api":
+                            if "method" in t_args:
+                                t_args["endpoint"] = t_args.pop("method")
+                            if "query" in t_args:
+                                q_val = t_args.pop("query")
+                                t_args["params"] = f"query={q_val}" if "=" not in q_val else q_val
                         fake_calls.append({"name": t_name, "args": t_args, "id": f"call_fake_json_{loop_i}_{len(fake_calls)}"})
                     except:
                         pass
