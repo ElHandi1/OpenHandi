@@ -29,7 +29,14 @@ Usa get_technical_analysis(coin_id) para obtener indicadores pre-calculados:
 - OBV: divergencias volumen/precio
 - Volatilidad 30d anualizada
 
-Analiza CONFLUENCIAS: cuantos indicadores coinciden en la misma direccion.
+ANÁLISIS DE CONFLUENCIAS — OBLIGATORIO:
+Después de listar los indicadores, agrúpalos en dos columnas:
+- SEÑALES ALCISTAS: indicadores que apuntan hacia arriba
+- SEÑALES BAJISTAS: indicadores que apuntan hacia abajo
+
+Si hay 3+ señales en la misma dirección = tendencia confirmada.
+Si están repartidas = mercado lateral, mencionar explícitamente.
+Nunca des un veredicto de ALCISTA/BAJISTA con menos de 3 confluencias.
 
 FASE 3 — ANALISIS FUNDAMENTAL (web_search + fetch_url)
 Minimo 4 busquedas sobre:
