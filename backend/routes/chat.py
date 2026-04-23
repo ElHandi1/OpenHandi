@@ -88,17 +88,59 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
             # Agent loop — ejecutar herramientas y re-invocar
             max_loops = 8 if req.is_deep_thinking else 5
             loop_i = 0
-            while hasattr(res, "tool_calls") and res.tool_calls and loop_i < max_loops:
-                tool_names = [t["name"] for t in res.tool_calls]
-                log.info(f"[Chat] Loop {loop_i+1}/{max_loops}: {tool_names}")
+            
+            import re
+            from langchain_core.messages import ToolMessage
+            
+            while loop_i < max_loops:
+                native_calls = getattr(res, "tool_calls", [])
+                content = res.content or ""
+                
+                # Buscar tool calls manuales (DeepSeek V3.2 suele hacer esto en NIM)
+                fake_calls = []
+                matches = re.finditer(r'\[TOOL_CALL\]\s*\{tool\s*=>\s*"([^"]+)",\s*args\s*=>\s*\{(.*?)\}\}\s*\[/TOOL_CALL\]', content, re.DOTALL)
+                for i, m in enumerate(matches):
+                    t_name = m.group(1)
+                    t_args_str = m.group(2)
+                    
+                    # Parsear los argumentos --key "value"
+                    args_dict = {}
+                    arg_matches = re.finditer(r'--(\w+)\s+"([^"]+)"', t_args_str)
+                    for am in arg_matches:
+                        args_dict[am.group(1)] = am.group(2)
+                        
+                    fake_calls.append({
+                        "name": t_name,
+                        "args": args_dict,
+                        "id": f"call_fake_{loop_i}_{i}"
+                    })
+
+                all_calls = native_calls + fake_calls
+                
+                if not all_calls:
+                    break
+
+                tool_names = [t["name"] for t in all_calls]
+                log.info(f"[Chat] Loop {loop_i+1}/{max_loops}: {tool_names} (Nativos: {len(native_calls)}, Fake: {len(fake_calls)})")
                 messages_dict.append(res)
 
-                for tc in res.tool_calls:
+                for tc in all_calls:
                     name = tc["name"]
                     tool_fn = TOOLS_MAP.get(name)
                     if tool_fn:
                         log.info(f"[Chat] -> {name}({tc['args']})")
-                        messages_dict.append(tool_fn.invoke(tc))
+                        try:
+                            if "id" in tc and tc["id"].startswith("call_fake_"):
+                                # Fake tool call -> pasamos dict y creamos ToolMessage manual
+                                ans = tool_fn.invoke(tc["args"])
+                                messages_dict.append(ToolMessage(content=str(ans), tool_call_id=tc["id"], name=name))
+                            else:
+                                # Native tool call
+                                messages_dict.append(tool_fn.invoke(tc))
+                        except Exception as e:
+                            log.error(f"[Chat] Error en tool {name}: {e}")
+                            err_msg = ToolMessage(content=f"Error: {str(e)}", tool_call_id=tc.get("id", "unknown"), name=name)
+                            messages_dict.append(err_msg)
                     else:
                         log.warning(f"[Chat] Herramienta desconocida: {name}")
 
