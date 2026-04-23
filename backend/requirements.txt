@@ -9,3 +9,6 @@ httpx
 pydantic
 langchain-openai
 langchain-community
+twikit
+pandas
+pandas-ta

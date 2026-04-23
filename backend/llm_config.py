@@ -10,21 +10,22 @@ log = logging.getLogger("openhandi")
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY")
 NVIDIA_BASE = "https://integrate.api.nvidia.com/v1"
 
-def _llm(model: str, max_tokens: int = 1024, timeout: int = 30, temperature: float = 0.7):
+def _llm(model: str, max_tokens: int = 1024, timeout: int = 30, temperature: float = 0.7, **kwargs):
     return ChatOpenAI(
         model=model,
         openai_api_base=NVIDIA_BASE,
         openai_api_key=NVIDIA_API_KEY,
         max_tokens=max_tokens,
         request_timeout=timeout,
-        temperature=temperature
+        temperature=temperature,
+        **kwargs
     )
 
-# Chat Oracle — rapido, en USA
+# Chat Oracle — DeepSeek V3.2 (MoE, 128K ctx, function calling nativo, system prompt OK)
 def get_llm(is_deep_thinking: bool = False):
     if is_deep_thinking:
-        return _llm("meta/llama-3.3-70b-instruct", max_tokens=4096, timeout=120)
-    return _llm("meta/llama-3.3-70b-instruct", max_tokens=2048, timeout=45)
+        return _llm("deepseek-ai/deepseek-v3_2", max_tokens=16000, timeout=180, temperature=0.1)
+    return _llm("deepseek-ai/deepseek-v3_2", max_tokens=16000, timeout=90, temperature=0.1)
 
 def get_fallback_llm():
     return _llm("minimaxai/minimax-m2.7", timeout=45)
