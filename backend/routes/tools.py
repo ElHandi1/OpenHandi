@@ -66,20 +66,50 @@ def fetch_url(url: str) -> str:
 # ──────────────────────────────────────────────────
 # TOOL 3 — coingecko_api (generico)
 # ──────────────────────────────────────────────────
+import time
+
+def fetch_coingecko(url: str, params: dict = None):
+    """Helper para hacer peticiones a CoinGecko con manejo de rate limit."""
+    headers = {"x-cg-demo-api-key": os.environ.get("COINGECKO_API_KEY", "")}
+    
+    for attempt in range(3):
+        response = httpx.get(url, params=params, headers=headers, timeout=15.0)
+        if response.status_code == 429:
+            wait = int(response.headers.get("Retry-After", 10))
+            time.sleep(wait)
+            continue
+        if response.status_code != 200:
+            return {"error": f"CoinGecko returned {response.status_code}", "data": None}
+        try:
+            data = response.json()
+            if not data or isinstance(data, str):
+                return {"error": "Empty or invalid response", "data": None}
+            return {"error": None, "data": data}
+        except Exception:
+            return {"error": "Failed to parse JSON", "data": None}
+            
+    return {"error": "Rate limit exceeded after 3 retries", "data": None}
 @tool
 def coingecko_api(endpoint: str, params: str = "") -> str:
     """Consulta cualquier endpoint de la API de CoinGecko. endpoint es la ruta despues de /api/v3/ (ej: 'coins/bitcoin', 'search/trending', 'global'). params es un query string opcional (ej: 'vs_currency=usd&days=90')."""
     try:
         url = f"https://api.coingecko.com/api/v3/{endpoint}"
+        param_dict = {}
         if params:
-            url += f"?{params}"
-        req = httpx.get(url, timeout=15.0)
-        req.raise_for_status()
+            for pair in params.split("&"):
+                if "=" in pair:
+                    k, v = pair.split("=", 1)
+                    param_dict[k] = v
+                    
+        res = fetch_coingecko(url, param_dict)
+        if res["error"]:
+            import json
+            return json.dumps(res)
+            
         import json
-        data = req.json()
-        return json.dumps(data, indent=1, default=str)[:8000]
+        return json.dumps(res["data"], indent=1, default=str)[:8000]
     except Exception as e:
-        return f"Error consultando CoinGecko ({endpoint}): {str(e)}"
+        return f'{{"error": "Error consultando CoinGecko ({endpoint}): {str(e)}", "data": null}}'
 
 
 # ──────────────────────────────────────────────────
@@ -90,13 +120,12 @@ def get_technical_analysis(coin_id: str) -> str:
     """Obtiene datos OHLCV de 90 dias de CoinGecko y calcula todos los indicadores tecnicos: RSI, EMAs, MACD, Bollinger, Stochastic, ADX, OBV, Fibonacci, volatilidad. coin_id es el ID de CoinGecko (ej: 'bitcoin', 'solana', 'hedera-hashgraph')."""
     try:
         # Fetch OHLCV
-        req = httpx.get(
-            f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc",
-            params={"vs_currency": "usd", "days": "90"},
-            timeout=15.0
-        )
-        req.raise_for_status()
-        raw = req.json()
+        ohlcv_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc"
+        ohlcv_res = fetch_coingecko(ohlcv_url, {"vs_currency": "usd", "days": "90"})
+        if ohlcv_res["error"]:
+            return f"Error obteniendo OHLCV: {ohlcv_res['error']}"
+            
+        raw = ohlcv_res["data"]
         if not raw or len(raw) < 20:
             return f"Datos OHLCV insuficientes para {coin_id}."
 
@@ -104,13 +133,12 @@ def get_technical_analysis(coin_id: str) -> str:
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
 
         # Fetch volume separately from market_chart
-        vol_req = httpx.get(
-            f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart",
-            params={"vs_currency": "usd", "days": "90", "interval": "daily"},
-            timeout=15.0
-        )
-        vol_req.raise_for_status()
-        vol_data = vol_req.json().get("total_volumes", [])
+        vol_url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+        vol_res = fetch_coingecko(vol_url, {"vs_currency": "usd", "days": "90", "interval": "daily"})
+        
+        vol_data = []
+        if not vol_res["error"] and vol_res["data"]:
+            vol_data = vol_res["data"].get("total_volumes", [])
         if vol_data and len(vol_data) >= len(df):
             df["volume"] = [v[1] for v in vol_data[:len(df)]]
         else:
