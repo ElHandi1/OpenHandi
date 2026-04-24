@@ -23,10 +23,10 @@ def _llm(model: str, max_tokens: int = 1024, timeout: int = 30, temperature: flo
 
 # Chat Oracle — DeepSeek V3.2 (MoE, 128K ctx, function calling nativo, system prompt OK)
 def get_llm(is_deep_thinking: bool = False):
-    model_kwargs = {"extra_body": {"chat_template_kwargs": {"thinking": is_deep_thinking}}}
+    extra_body = {"chat_template_kwargs": {"thinking": is_deep_thinking}}
     if is_deep_thinking:
-        return _llm("deepseek-ai/deepseek-v3.2", max_tokens=8192, timeout=180, temperature=0.1, model_kwargs=model_kwargs)
-    return _llm("deepseek-ai/deepseek-v3.2", max_tokens=8192, timeout=90, temperature=0.1, model_kwargs=model_kwargs)
+        return _llm("deepseek-ai/deepseek-v3.2", max_tokens=8192, timeout=180, temperature=0.1, extra_body=extra_body)
+    return _llm("deepseek-ai/deepseek-v3.2", max_tokens=8192, timeout=90, temperature=0.1, extra_body=extra_body)
 
 def get_fallback_llm():
     return _llm("minimaxai/minimax-m2.7", timeout=45)
