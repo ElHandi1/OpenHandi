@@ -215,9 +215,26 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
             fallback_llm = get_fallback_llm()
             res = fallback_llm.invoke(messages_dict)
 
+        # Debug temporal
+        log.info(f"Response type: {type(res)}")
+        log.info(f"Response content: {repr(res.content)}")
+        log.info(f"Response keys: {res.__dict__.keys() if hasattr(res, '__dict__') else 'no dict'}")
+        log.info(f"Additional kwargs: {getattr(res, 'additional_kwargs', {})}")
+
         ai_response = res.content
+        if not ai_response:
+            # Fallback para thinking mode
+            ai_response = getattr(res, 'additional_kwargs', {}).get('reasoning_content', '')
+        if not ai_response:
+            ai_response = getattr(res, 'additional_kwargs', {}).get('thinking', '')
+        if isinstance(ai_response, list):
+            ai_response = ' '.join([c.get('text', '') for c in ai_response if isinstance(c, dict)])
+
+        if not isinstance(ai_response, str):
+            ai_response = str(ai_response or '')
+
         log.info(f"[Chat] LLM respondio en {time.time()-t_llm:.1f}s | Total: {time.time()-t0:.1f}s")
-        log.info(f"[Chat] Guardando mensaje. Role: assistant, Content length: {len(ai_response or '')}")
+        log.info(f"[Chat] Guardando mensaje. Role: assistant, Content length: {len(ai_response)}")
 
         supabase.table("messages").insert({
             "session_id": session_id,
