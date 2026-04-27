@@ -217,6 +217,29 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
                 res = llm.invoke(messages_dict)
                 loop_i += 1
 
+            # ── Síntesis forzada ──────────────────────────────────────
+            # Si la respuesta final tiene tool_calls o content vacío,
+            # el modelo quería seguir investigando pero ya no hay loops.
+            # Forzamos una llamada extra SIN herramientas para que sintetice.
+            final_content = res.content or ""
+            has_pending_tools = bool(getattr(res, "tool_calls", None))
+
+            if not final_content.strip() or has_pending_tools:
+                log.info(f"[Chat] Respuesta final vacía o con tool_calls pendientes. Forzando síntesis sin herramientas...")
+                synthesis_prompt = (
+                    "Has completado la investigación. "
+                    "Basándote en TODA la información recopilada en los pasos anteriores, "
+                    "genera ahora el informe final completo y detallado. "
+                    "No busques más información, solo sintetiza lo que ya tienes."
+                )
+                messages_for_synthesis = messages_dict + [
+                    {"role": "user", "content": synthesis_prompt}
+                ]
+                # Llamada SIN bind_tools — solo genera texto
+                llm_plain = get_llm(is_deep_thinking=req.is_deep_thinking)
+                res = llm_plain.invoke(messages_for_synthesis)
+                log.info(f"[Chat] Síntesis forzada completada. Content length: {len(res.content or '')}")
+
         except Exception as primary_e:
             log.warning(f"[Chat] Modelo primario fallo ({primary_e}), usando fallback...")
             fallback_llm = get_fallback_llm()
