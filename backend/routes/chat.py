@@ -189,7 +189,14 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
 
                 tool_names = [t["name"] for t in all_calls]
                 log.info(f"[Chat] Loop {loop_i+1}/{max_loops}: {tool_names} (Nativos: {len(native_calls)}, Fake: {len(fake_calls)})")
-                messages_dict.append(res)
+                # Sanitizar: nunca reenviar reasoning_content al API (DeepSeek 400)
+                from langchain_core.messages import AIMessage as _AIMsg
+                clean_res = _AIMsg(
+                    content=res.content or "",
+                    tool_calls=all_calls,
+                    id=getattr(res, "id", None),
+                )
+                messages_dict.append(clean_res)
 
                 for tc in all_calls:
                     name = tc["name"]
@@ -223,12 +230,19 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
 
         ai_response = res.content
         if not ai_response:
-            # Fallback para thinking mode
-            ai_response = getattr(res, 'additional_kwargs', {}).get('reasoning_content', '')
-        if not ai_response:
-            ai_response = getattr(res, 'additional_kwargs', {}).get('thinking', '')
+            ak = getattr(res, 'additional_kwargs', {})
+            ai_response = (
+                ak.get('reasoning_content') or
+                ak.get('thinking') or
+                ak.get('content') or
+                ''
+            )
         if isinstance(ai_response, list):
-            ai_response = ' '.join([c.get('text', '') for c in ai_response if isinstance(c, dict)])
+            ai_response = ' '.join(
+                c.get('text', '') for c in ai_response if isinstance(c, dict)
+            )
+        if not ai_response:
+            log.error(f"[Chat] Respuesta vacía. additional_kwargs: {getattr(res, 'additional_kwargs', {})}")
 
         if not isinstance(ai_response, str):
             ai_response = str(ai_response or '')
