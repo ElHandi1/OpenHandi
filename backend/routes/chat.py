@@ -217,6 +217,7 @@ def process_chat(req: ChatRequest, token: str = Depends(verify_token)):
 
         ai_response = res.content
         log.info(f"[Chat] LLM respondio en {time.time()-t_llm:.1f}s | Total: {time.time()-t0:.1f}s")
+        log.info(f"[Chat] Guardando mensaje. Role: assistant, Content length: {len(ai_response or '')}")
 
         supabase.table("messages").insert({
             "session_id": session_id,

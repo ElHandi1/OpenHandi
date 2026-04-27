@@ -98,7 +98,8 @@ export default function ChatView() {
       const res = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-assistant-token': token },
-        body: JSON.stringify({ message: userMessage, session_id: activeSessionId, is_deep_thinking: isDeepThinking })
+        body: JSON.stringify({ message: userMessage, session_id: activeSessionId, is_deep_thinking: isDeepThinking }),
+        signal: AbortSignal.timeout(180000)
       });
       if (res.ok) {
         const data = await res.json();
